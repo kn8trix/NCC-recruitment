@@ -1,0 +1,8 @@
+.env*
+!.env.example
+node_modules/
+dist/
+*.log
+recruitment-export*.json
+agentic-awesome-skills-main*/
+ui-ux-pro-max-skill-main/
