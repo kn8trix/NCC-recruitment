@@ -38,8 +38,9 @@ const payload = {
     department: submission.department,
     whatsapp: submission.whatsapp_num,
     email: submission.email,
-    photo_url: submission.photo_url,
+    photo_path: submission.photo_path,
     segments: submission.segments,
+    other_interest: submission.other_interest,
     xp_earned: submission.xp_earned,
   })),
 };

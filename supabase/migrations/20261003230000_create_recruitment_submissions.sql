@@ -2,16 +2,19 @@ create table if not exists public.recruitment_submissions (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
   full_name varchar(255) not null check (char_length(trim(full_name)) between 2 and 255),
-  student_id varchar(50) not null unique check (char_length(trim(student_id)) between 2 and 50),
+  student_id varchar(50) not null unique,
+  constraint recruitment_submissions_student_id_format check (
+    student_id ~* '^[A-Z]{2}-[0-9]{7}$'
+  ),
   department varchar(40) not null check (
     department in ('CSE', 'EEE', 'Textile Engineering', 'IPE', 'FDAE')
   ),
   whatsapp_num varchar(20) not null check (char_length(trim(whatsapp_num)) between 8 and 20),
   email varchar(255) not null check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
-  photo_url text not null,
+  photo_path text not null,
+  photo_url text,
   segments text[] not null check (
-    cardinality(segments) > 0
-    and segments <@ array[
+    segments <@ array[
       'App Development',
       'Web Development',
       'Cybersecurity',
@@ -20,6 +23,14 @@ create table if not exists public.recruitment_submissions (
       'Graphics Design',
       'Gaming'
     ]::text[]
+  ),
+  other_interest text,
+  constraint recruitment_submissions_other_interest_length check (
+    other_interest is null
+    or char_length(trim(other_interest)) between 1 and 120
+  ),
+  constraint recruitment_submissions_segments_or_other check (
+    cardinality(segments) > 0 or other_interest is not null
   ),
   xp_earned integer not null default 0 check (xp_earned between 0 and 100),
   status varchar(50) not null default 'PENDING' check (status = 'PENDING')
@@ -35,8 +46,9 @@ grant insert (
   department,
   whatsapp_num,
   email,
-  photo_url,
+  photo_path,
   segments,
+  other_interest,
   xp_earned,
   status
 ) on public.recruitment_submissions to anon;
@@ -48,19 +60,19 @@ create policy "Public can submit recruitment applications"
   with check (
     status = 'PENDING'
     and xp_earned between 0 and 100
-    and cardinality(segments) > 0
+    and (cardinality(segments) > 0 or other_interest is not null)
   );
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'student-photos',
   'student-photos',
-  true,
+  false,
   5242880,
   array['image/jpeg', 'image/png']
 )
 on conflict (id) do update
-set public = excluded.public,
+set public = false,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
 

@@ -1,29 +1,35 @@
 # NCC Recruitment Portal
 
-A zero-login recruitment application for NITER Computer Club, built with React, Vite, TypeScript, Three.js, and Supabase.
+A NITER Computer Club recruitment application built with React, Vite, TypeScript, and Supabase. Applications are publicly insertable, but student records are not publicly readable. Applicant photos are stored in a private Supabase Storage bucket.
 
 ## Run locally
 
-1. Install Node.js 18 or newer.
-2. Install dependencies with `npm install`.
-3. If `.env` does not already exist, copy `.env.example` to `.env`. Otherwise keep your existing `.env` and confirm that `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Keep all service-role and external-sync credentials server-side; never use a `VITE_` prefix for them.
-4. In the Supabase SQL editor, run [`supabase/migrations/20261003230000_create_recruitment_submissions.sql`](./supabase/migrations/20261003230000_create_recruitment_submissions.sql).
-5. Run `npm run dev` and open the local URL printed by Vite.
+1. Install Node.js 18 or newer and run `npm install`.
+2. Copy `.env.example` to `.env` if needed. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for the application. Do not expose server-only credentials with a `VITE_` prefix.
+3. Apply the migrations in order in the Supabase SQL Editor:
+   - [`supabase/migrations/20261003230000_create_recruitment_submissions.sql`](./supabase/migrations/20261003230000_create_recruitment_submissions.sql)
+   - [`supabase/migrations/20261004001200_add_other_interest_and_student_id_format.sql`](./supabase/migrations/20261004001200_add_other_interest_and_student_id_format.sql)
+   - [`supabase/migrations/20261004004000_private_photos_admin_csv.sql`](./supabase/migrations/20261004004000_private_photos_admin_csv.sql)
+4. Run `npm run dev` and open the local URL printed by Vite. Vite's development server does not run the Vercel `/api/admin/export` function, so admin CSV export is available on the deployed Vercel site.
 
-The migration creates the `recruitment_submissions` table, public insert-only RLS policy, and public `student-photos` bucket (JPEG/PNG, maximum 5 MB). Public bucket photos are retrievable by URL, so tell applicants before upload and use only an image they are comfortable sharing with the recruitment team. Public applications intentionally have no read, update, or delete access. Because submissions are public, configure Supabase rate limits and monitoring before a production launch.
+The migrations create the `recruitment_submissions` table with anonymous insert-only access and a private `student-photos` bucket (JPEG/PNG, maximum 5 MB). Student IDs use the `CS-2607001` format. Applicants may choose listed segments or enter a custom interest. Student details have no public read policy; photos are stored as private object paths, not public URLs. Anonymous submissions still need appropriate Supabase rate limits, monitoring, a retention policy, and a privacy notice.
+
+If the first two migrations were already applied to an existing project, apply only the latest private-photos/admin migration. It switches the photo bucket to private, converts existing public photo URLs to private object paths where possible, clears stored public URLs, and updates insert permissions. Check the Storage dashboard after migration and ensure `student-photos` is private and has no public read policy.
 
 ## Deploy to Vercel
 
-1. Push this project to GitHub and import `kn8trix/NCC-recruitment` in Vercel. Use the repository root as the project root; Vercel reads [`vercel.json`](./vercel.json) for the Vite build, `dist` output, SPA route fallback, and baseline security headers.
-2. In **Project Settings → Environment Variables**, add these for **Production**, **Preview**, and **Development**:
-   - `VITE_SUPABASE_URL` — the Supabase project URL.
-   - `VITE_SUPABASE_ANON_KEY` — the Supabase publishable/anon key.
-3. Deploy, then test the deployed form with a new test student ID, photo upload, successful insert, pass, and PDF download.
+1. Import the repository root in Vercel. It reads [`vercel.json`](./vercel.json) for the Vite build, `dist` output, SPA fallback, and baseline security headers.
+2. In **Project Settings → Environment Variables**, add the following for the environments you use:
+   - `VITE_SUPABASE_URL` — Supabase project URL.
+   - `VITE_SUPABASE_ANON_KEY` — Supabase publishable/anon key.
+   - `SUPABASE_URL` — the same Supabase project URL, server-side.
+   - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service-role key; server-side only.
+   - `ADMIN_EMAILS` — comma-separated email addresses allowed to export, for example `you@example.com`.
+3. In Supabase **Authentication → Users**, create or invite the admin account using an email listed in `ADMIN_EMAILS`. Keep public sign-up disabled unless you separately need it; the allowlist is still enforced by the server endpoint.
+4. Redeploy Vercel after setting the environment variables and applying the migrations. Open the site footer's **Admin CSV** control, sign in with the authorized Supabase account, then choose **Download all applicant data**.
 
-Only the Supabase publishable/anon key belongs in a `VITE_` variable. Do not add `SUPABASE_SERVICE_ROLE_KEY` or external-sync credentials to Vercel's client-exposed variables; the external sync script runs in a trusted server/local environment and is not a deployed API route. Apply the SQL migration to the Supabase project before testing submissions. If restricting Supabase origins, allow the production domain and the Vercel preview domains used for testing.
-
-Before public launch, configure anti-abuse/rate limits and monitoring for anonymous submissions, decide how long applicant data and uploaded photos will be retained, and publish a privacy notice. The current photo bucket is public by design, so uploaded image URLs can be viewed by anyone who obtains them.
+The CSV endpoint validates the Supabase access token, checks the normalized email against the server-side allowlist, and uses the service-role key only on the server. It paginates through all records and includes the private photo object path (not a publicly retrievable photo URL). The CSV contains sensitive personal data, so store and share it securely. Never add the service-role key or `ADMIN_EMAILS` to a `VITE_` variable, commit them, or put them in browser code.
 
 ## External data sync
 
-Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NCC_EXTERNAL_SYNC_URL`, and `NCC_EXTERNAL_SYNC_TOKEN` in a trusted local/server environment, then run `npm run sync:external`. The script fetches records with the service-role key and POSTs the documented export shape to the configured endpoint. Never expose these server-only secrets to browser code or commit them.
+Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NCC_EXTERNAL_SYNC_URL`, and `NCC_EXTERNAL_SYNC_TOKEN` in a trusted local/server environment, then run `npm run sync:external`. The script sends applicant data, including private photo object paths, to the explicitly configured endpoint. Only use a destination you control and have secured. Never expose these server-only credentials to browser code or commit them.
