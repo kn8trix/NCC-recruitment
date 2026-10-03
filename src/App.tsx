@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import confetti from "canvas-confetti";
-import { jsPDF } from "jspdf";
 import {
   ArrowDown,
   ArrowRight,
@@ -18,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import * as THREE from "three";
+import type { WebGLRenderer } from "three";
 import { departments, segments, type Segment } from "./data/segments";
 import { getSupabaseClient } from "./lib/supabase";
 
@@ -125,157 +123,173 @@ function ByteBot({ energy = 0 }: { energy?: number }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
+    let cancelled = false;
+    let cleanup = () => {};
+
+    void import("three")
+      .then((THREE) => {
+        if (cancelled) return;
+
+        let renderer: WebGLRenderer;
+        try {
+          renderer = new THREE.WebGLRenderer({
+            canvas,
+            alpha: true,
+            antialias: true,
+          });
+        } catch {
+          setWebglUnavailable(true);
+          return;
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+        camera.position.set(0, 0, 6.4);
+
+        const robot = new THREE.Group();
+        scene.add(robot);
+
+        scene.add(new THREE.HemisphereLight(0xa4eaff, 0x101a37, 2.1));
+        const keyLight = new THREE.PointLight(0x2f71e8, 22, 14);
+        keyLight.position.set(-3, 3, 4);
+        scene.add(keyLight);
+        const rimLight = new THREE.PointLight(0x76c84b, 14, 10);
+        rimLight.position.set(3, -1, -2);
+        scene.add(rimLight);
+
+        const shell = new THREE.Mesh(
+          new THREE.BoxGeometry(1.75, 1.55, 1.25, 4, 4, 4),
+          new THREE.MeshStandardMaterial({
+            color: 0x111c31,
+            metalness: 0.72,
+            roughness: 0.28,
+            emissive: 0x081a2b,
+          }),
+        );
+        robot.add(shell);
+
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(shell.geometry),
+          new THREE.LineBasicMaterial({ color: 0x49d9ed, transparent: true, opacity: 0.8 }),
+        );
+        robot.add(edges);
+
+        const eye = new THREE.Mesh(
+          new THREE.SphereGeometry(0.2, 24, 24),
+          new THREE.MeshStandardMaterial({
+            color: 0x9efff2,
+            emissive: 0x19d7ee,
+            emissiveIntensity: 3.5,
+            metalness: 0.2,
+            roughness: 0.12,
+          }),
+        );
+        eye.position.set(0.08, 0.05, 0.68);
+        robot.add(eye);
+
+        const eyeHalo = new THREE.Mesh(
+          new THREE.TorusGeometry(0.3, 0.018, 8, 48),
+          new THREE.MeshBasicMaterial({ color: 0x76c84b }),
+        );
+        eyeHalo.position.copy(eye.position);
+        robot.add(eyeHalo);
+
+        const orbit = new THREE.Mesh(
+          new THREE.TorusGeometry(1.48, 0.012, 8, 100),
+          new THREE.MeshBasicMaterial({ color: 0x2f71e8, transparent: true, opacity: 0.9 }),
+        );
+        orbit.rotation.set(0.92, 0.16, -0.28);
+        robot.add(orbit);
+
+        const secondOrbit = new THREE.Mesh(
+          new THREE.TorusGeometry(1.72, 0.008, 8, 100),
+          new THREE.MeshBasicMaterial({ color: 0x76c84b, transparent: true, opacity: 0.7 }),
+        );
+        secondOrbit.rotation.set(0.35, -0.62, 0.22);
+        robot.add(secondOrbit);
+
+        const pixel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.11, 0.11, 0.11),
+          new THREE.MeshBasicMaterial({ color: 0x76c84b }),
+        );
+        pixel.position.set(1.05, 0.8, 0.15);
+        robot.add(pixel);
+
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        const resizeObserver = new ResizeObserver(() => {
+          const { width, height } = canvas.getBoundingClientRect();
+          if (!width || !height) return;
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        });
+        resizeObserver.observe(canvas);
+
+        let frame = 0;
+        let animationFrame = 0;
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const render = () => {
+          if (!reducedMotion) {
+            frame += 0.008;
+            robot.position.y = Math.sin(frame) * 0.055;
+            robot.rotation.y += 0.0018;
+          }
+          eye.scale.setScalar(1 + Math.sin(frame * 1.6) * 0.035);
+          renderer.render(scene, camera);
+          if (!reducedMotion) animationFrame = window.requestAnimationFrame(render);
+        };
+        render();
+
+        let dragging = false;
+        let previousX = 0;
+        let previousY = 0;
+        const onPointerDown = (event: PointerEvent) => {
+          dragging = true;
+          previousX = event.clientX;
+          previousY = event.clientY;
+          canvas.setPointerCapture(event.pointerId);
+        };
+        const onPointerMove = (event: PointerEvent) => {
+          if (!dragging) return;
+          robot.rotation.y += (event.clientX - previousX) * 0.008;
+          robot.rotation.x += (event.clientY - previousY) * 0.008;
+          previousX = event.clientX;
+          previousY = event.clientY;
+          if (reducedMotion) renderer.render(scene, camera);
+        };
+        const onPointerUp = () => {
+          dragging = false;
+        };
+        canvas.addEventListener("pointerdown", onPointerDown);
+        canvas.addEventListener("pointermove", onPointerMove);
+        canvas.addEventListener("pointerup", onPointerUp);
+        canvas.addEventListener("pointercancel", onPointerUp);
+
+        cleanup = () => {
+          window.cancelAnimationFrame(animationFrame);
+          resizeObserver.disconnect();
+          canvas.removeEventListener("pointerdown", onPointerDown);
+          canvas.removeEventListener("pointermove", onPointerMove);
+          canvas.removeEventListener("pointerup", onPointerUp);
+          canvas.removeEventListener("pointercancel", onPointerUp);
+          scene.traverse((object) => {
+            if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+              object.geometry.dispose();
+              const materials = Array.isArray(object.material) ? object.material : [object.material];
+              materials.forEach((material) => material.dispose());
+            }
+          });
+          renderer.dispose();
+        };
+      })
+      .catch(() => {
+        if (!cancelled) setWebglUnavailable(true);
       });
-    } catch {
-      setWebglUnavailable(true);
-      return;
-    }
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-    camera.position.set(0, 0, 6.4);
-
-    const robot = new THREE.Group();
-    scene.add(robot);
-
-    scene.add(new THREE.HemisphereLight(0xa4eaff, 0x101a37, 2.1));
-    const keyLight = new THREE.PointLight(0x2f71e8, 22, 14);
-    keyLight.position.set(-3, 3, 4);
-    scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0x76c84b, 14, 10);
-    rimLight.position.set(3, -1, -2);
-    scene.add(rimLight);
-
-    const shell = new THREE.Mesh(
-      new THREE.BoxGeometry(1.75, 1.55, 1.25, 4, 4, 4),
-      new THREE.MeshStandardMaterial({
-        color: 0x111c31,
-        metalness: 0.72,
-        roughness: 0.28,
-        emissive: 0x081a2b,
-      }),
-    );
-    robot.add(shell);
-
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(shell.geometry),
-      new THREE.LineBasicMaterial({ color: 0x49d9ed, transparent: true, opacity: 0.8 }),
-    );
-    robot.add(edges);
-
-    const eye = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 24, 24),
-      new THREE.MeshStandardMaterial({
-        color: 0x9efff2,
-        emissive: 0x19d7ee,
-        emissiveIntensity: 3.5,
-        metalness: 0.2,
-        roughness: 0.12,
-      }),
-    );
-    eye.position.set(0.08, 0.05, 0.68);
-    robot.add(eye);
-
-    const eyeHalo = new THREE.Mesh(
-      new THREE.TorusGeometry(0.3, 0.018, 8, 48),
-      new THREE.MeshBasicMaterial({ color: 0x76c84b }),
-    );
-    eyeHalo.position.copy(eye.position);
-    robot.add(eyeHalo);
-
-    const orbit = new THREE.Mesh(
-      new THREE.TorusGeometry(1.48, 0.012, 8, 100),
-      new THREE.MeshBasicMaterial({ color: 0x2f71e8, transparent: true, opacity: 0.9 }),
-    );
-    orbit.rotation.set(0.92, 0.16, -0.28);
-    robot.add(orbit);
-
-    const secondOrbit = new THREE.Mesh(
-      new THREE.TorusGeometry(1.72, 0.008, 8, 100),
-      new THREE.MeshBasicMaterial({ color: 0x76c84b, transparent: true, opacity: 0.7 }),
-    );
-    secondOrbit.rotation.set(0.35, -0.62, 0.22);
-    robot.add(secondOrbit);
-
-    const pixel = new THREE.Mesh(
-      new THREE.BoxGeometry(0.11, 0.11, 0.11),
-      new THREE.MeshBasicMaterial({ color: 0x76c84b }),
-    );
-    pixel.position.set(1.05, 0.8, 0.15);
-    robot.add(pixel);
-
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
-    const resizeObserver = new ResizeObserver(() => {
-      const { width, height } = canvas.getBoundingClientRect();
-      if (!width || !height) return;
-      renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    });
-    resizeObserver.observe(canvas);
-
-    let frame = 0;
-    let animationFrame = 0;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const render = () => {
-      if (!reducedMotion) {
-        frame += 0.008;
-        robot.position.y = Math.sin(frame) * 0.055;
-        robot.rotation.y += 0.0018;
-      }
-      eye.scale.setScalar(1 + Math.sin(frame * 1.6) * 0.035);
-      renderer.render(scene, camera);
-      if (!reducedMotion) animationFrame = window.requestAnimationFrame(render);
-    };
-    render();
-
-    let dragging = false;
-    let previousX = 0;
-    let previousY = 0;
-    const onPointerDown = (event: PointerEvent) => {
-      dragging = true;
-      previousX = event.clientX;
-      previousY = event.clientY;
-      canvas.setPointerCapture(event.pointerId);
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (!dragging) return;
-      robot.rotation.y += (event.clientX - previousX) * 0.008;
-      robot.rotation.x += (event.clientY - previousY) * 0.008;
-      previousX = event.clientX;
-      previousY = event.clientY;
-      if (reducedMotion) renderer.render(scene, camera);
-    };
-    const onPointerUp = () => {
-      dragging = false;
-    };
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
 
     return () => {
-      window.cancelAnimationFrame(animationFrame);
-      resizeObserver.disconnect();
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerup", onPointerUp);
-      canvas.removeEventListener("pointercancel", onPointerUp);
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
-          object.geometry.dispose();
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
-          materials.forEach((material) => material.dispose());
-        }
-      });
-      renderer.dispose();
+      cancelled = true;
+      cleanup();
     };
   }, []);
 
@@ -319,6 +333,7 @@ function App() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [activeSegment, setActiveSegment] = useState<Segment | null>(null);
   const [receipt, setReceipt] = useState<ApplicationReceipt | null>(null);
+  const [pdfError, setPdfError] = useState("");
   const segmentDialogRef = useRef<HTMLDialogElement>(null);
   const receiptDialogRef = useRef<HTMLDialogElement>(null);
 
@@ -475,6 +490,7 @@ function App() {
       };
       setReceipt(newReceipt);
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const confetti = (await import("canvas-confetti")).default;
         confetti({
           particleCount: 120,
           spread: 72,
@@ -494,7 +510,10 @@ function App() {
     }
   }
 
-  function downloadApplicationPdf(application: ApplicationReceipt) {
+  async function downloadApplicationPdf(application: ApplicationReceipt) {
+    setPdfError("");
+    try {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 18;
@@ -568,6 +587,10 @@ function App() {
 
     const fileSafeId = application.fields.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
     doc.save(`NCC_Recruitment_${fileSafeId}.pdf`);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "An unexpected error occurred.";
+      setPdfError(`PDF download failed: ${detail}`);
+    }
   }
 
   function closeReceipt() {
@@ -1122,6 +1145,7 @@ function App() {
             <button className="primary-button pdf-button" type="button" onClick={() => downloadApplicationPdf(receipt)}>
               <FileDown size={17} aria-hidden="true" /> Download A4 application PDF
             </button>
+            {pdfError && <p className="submit-error" role="alert">{pdfError}</p>}
             <button className="receipt-dismiss" type="button" onClick={closeReceipt}>Close pass</button>
           </div>
         )}
