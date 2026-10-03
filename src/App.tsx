@@ -991,7 +991,7 @@ function App() {
 
               <div className="privacy-note">
                 <ShieldCheck size={17} aria-hidden="true" />
-                <p>Your details are used for recruitment review. Uploaded photos are public by URL—only submit a photo you are comfortable sharing.</p>
+                <p>Your details and photo are private and accessible only to the recruitment team.</p>
               </div>
 
               {submissionError && (
