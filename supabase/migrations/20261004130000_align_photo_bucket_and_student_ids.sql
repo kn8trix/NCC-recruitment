@@ -23,7 +23,7 @@ create policy "Applicants can upload recruitment photos"
 alter table public.recruitment_submissions
   drop constraint if exists recruitment_submissions_student_id_format,
   add constraint recruitment_submissions_student_id_format
-    check (student_id ~* '^(CS|EE|TE|IP|FD)-26[0-9]{5}$') not valid,
+    check (student_id ~* '^(CS|EE|TE|IP|FD)-26[0-9]+$') not valid,
   drop constraint if exists recruitment_submissions_student_id_department,
   add constraint recruitment_submissions_student_id_department
     check (

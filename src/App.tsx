@@ -55,7 +55,7 @@ const departmentIdPrefixes: Record<string, string> = {
 
 function isValidStudentId(studentId: string, department: string) {
   const expectedPrefix = departmentIdPrefixes[department];
-  const match = /^([A-Z]{2})-26\d{5}$/i.exec(studentId.trim());
+  const match = /^([A-Z]{2})-26\d+$/i.exec(studentId.trim());
   return Boolean(expectedPrefix && match?.[1].toUpperCase() === expectedPrefix);
 }
 
@@ -810,7 +810,7 @@ function App() {
                 const target = event.target;
                 const hints: Record<string, string> = {
                   full_name: "Use the name shown on your student record.",
-                  student_id: "Use your department prefix, followed by -26 and five more digits. For example CS-2607001.",
+                  student_id: "Use your department prefix, followed by -26 and the rest of your ID digits. For example CS-2607001.",
                   department: "Choose the department listed in your NITER records.",
                   email: "Use an email address you check regularly.",
                   whatsapp: "Include your country code if needed.",
@@ -856,8 +856,8 @@ function App() {
                       id="student-id"
                       name="student_id"
                       required
-                      maxLength={10}
-                      pattern="[A-Za-z]{2}-26[0-9]{5}"
+                      maxLength={50}
+                      pattern="[A-Za-z]{2}-26[0-9]+"
                       autoCapitalize="characters"
                       autoComplete="off"
                       placeholder={`${departmentIdPrefixes[fields.department] ?? "CS"}-2607001`}
@@ -867,7 +867,7 @@ function App() {
                       aria-describedby={errors.studentId ? "student-id-error" : undefined}
                     />
                     <small className="field-help">
-                      Prefix by department: CSE CS · EEE EE · Textile TE · IPE IP · FDAE FD. Follow it with -26 and five digits.
+                      Prefix by department: CSE CS · EEE EE · Textile TE · IPE IP · FDAE FD. Follow it with -26 and the remaining ID digits.
                     </small>
                     {errors.studentId && <small id="student-id-error" className="field-error">{errors.studentId}</small>}
                   </div>

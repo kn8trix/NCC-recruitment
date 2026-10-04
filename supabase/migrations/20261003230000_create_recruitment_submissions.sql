@@ -7,7 +7,7 @@ create table if not exists public.recruitment_submissions (
     department in ('CSE', 'EEE', 'Textile Engineering', 'IPE', 'FDAE')
   ),
   constraint recruitment_submissions_student_id_format check (
-    student_id ~* '^(CS|EE|TE|IP|FD)-26[0-9]{5}$'
+    student_id ~* '^(CS|EE|TE|IP|FD)-26[0-9]+$'
   ),
   constraint recruitment_submissions_student_id_department check (
     (department = 'CSE' and student_id ~* '^CS-')
