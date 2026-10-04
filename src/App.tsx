@@ -183,8 +183,6 @@ function MascotGuide({
   setTip: (tip: string) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const [climberTop, setClimberTop] = useState(80);
-  const [isClimbing, setIsClimbing] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -206,58 +204,86 @@ function MascotGuide({
   }, [setTip]);
 
   useEffect(() => {
-    let frameId = 0;
-    let stillnessTimeout = 0;
-
-    const updateClimber = () => {
-      if (frameId) return;
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-        const scrollProgress = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
-        const minTop = 80;
-        const maxTop = Math.max(minTop, window.innerHeight - (open ? 230 : 100));
-        setClimberTop(minTop + (maxTop - minTop) * scrollProgress);
-        setIsClimbing(true);
-        window.clearTimeout(stillnessTimeout);
-        stillnessTimeout = window.setTimeout(() => setIsClimbing(false), 180);
-      });
-    };
-
-    updateClimber();
-    window.addEventListener("scroll", updateClimber, { passive: true });
-    window.addEventListener("resize", updateClimber);
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(stillnessTimeout);
-      window.removeEventListener("scroll", updateClimber);
-      window.removeEventListener("resize", updateClimber);
-    };
-  }, [open]);
-
-  useEffect(() => {
     setOpen(true);
     const timeout = window.setTimeout(() => setOpen(false), 7000);
     return () => window.clearTimeout(timeout);
   }, [tip]);
 
   return (
-    <aside
-      className={`mascot-guide${open ? " is-open" : ""}${isClimbing ? " is-climbing" : ""}`}
-      aria-label="Application helper"
-      style={{ top: `${climberTop}px` }}
+    <>
+      <aside className={`mascot-guide${open ? " is-open" : ""}`} aria-label="Application helper">
+        {open && <p className="mascot-chat" aria-live="polite">{tip}</p>}
+        <button
+          className="mascot-guide-button"
+          type="button"
+          aria-label={open ? "Hide application helper message" : "Show application helper message"}
+          aria-expanded={open}
+          onClick={() => setOpen((isOpen) => !isOpen)}
+        >
+          <ByteBot />
+        </button>
+      </aside>
+      <ScrollMonkey />
+    </>
+  );
+}
+
+function ScrollMonkey() {
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    let frameId = 0;
+    const updateProgress = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        setScrollProgress(
+          maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0,
+        );
+        setHasScrolled(window.scrollY > 24);
+      });
+    };
+
+    updateProgress();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
+  }, []);
+
+  return (
+    <div
+      className={`scroll-monkey-track${hasScrolled ? " is-visible" : ""}`}
+      aria-hidden="true"
     >
-      {open && <p className="mascot-chat" aria-live="polite">{tip}</p>}
-      <button
-        className="mascot-guide-button"
-        type="button"
-        aria-label={open ? "Hide application helper message" : "Show application helper message"}
-        aria-expanded={open}
-        onClick={() => setOpen((isOpen) => !isOpen)}
+      <span className="scroll-monkey-rope" />
+      <svg
+        className="scroll-monkey"
+        viewBox="0 0 72 80"
+        style={{ top: `${scrollProgress * 100}%` }}
       >
-        <ByteBot />
-      </button>
-    </aside>
+        <path d="M17 38C4 38 5 57 16 58c7 1 9-7 4-10" fill="none" stroke="#8d5c42" strokeWidth="4" strokeLinecap="round" />
+        <path d="M21 41Q27 34 34 39M51 41Q45 34 38 39M24 58 15 70m33-12 9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+        <path d="M34 39q2-4 4 0" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="35" cy="39" r="3" fill="#e7a7bc" />
+        <rect x="22" y="37" width="28" height="27" rx="10" fill="#a5e6b5" stroke="#424046" strokeWidth="3" />
+        <circle cx="36" cy="21" r="17" fill="#8d5c42" stroke="#424046" strokeWidth="3" />
+        <circle cx="20" cy="20" r="6" fill="#c88c68" stroke="#424046" strokeWidth="2" />
+        <circle cx="52" cy="20" r="6" fill="#c88c68" stroke="#424046" strokeWidth="2" />
+        <ellipse cx="36" cy="25" rx="10" ry="7" fill="#f2d7be" />
+        <rect x="25" y="15" width="22" height="11" rx="5" fill="#252329" />
+        <circle cx="31" cy="20" r="2" fill="#a5e6b5" />
+        <circle cx="41" cy="20" r="2" fill="#a5e6b5" />
+        <path d="M32 27q4 3 8 0" fill="none" stroke="#424046" strokeWidth="1.5" strokeLinecap="round" />
+        <rect x="29" y="45" width="14" height="9" rx="3" fill="#424046" />
+        <circle cx="36" cy="49.5" r="2" fill="#e7a7bc" />
+      </svg>
+    </div>
   );
 }
 
