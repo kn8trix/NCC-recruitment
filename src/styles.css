@@ -3997,7 +3997,7 @@ input {
   }
 
   .preview-paper {
-    width: min(100%, 280px);
+    width: min(100%, 420px);
   }
 
   .footer-brand .brand-copy strong {
@@ -4463,5 +4463,28 @@ input {
     margin-right: 10px;
     margin-left: 10px;
   }
+}
 
+@media (max-width: 680px) {
+  .preview-paper {
+    width: min(100%, 420px);
+  }
+
+  .preview-paper-title strong {
+    font-size: clamp(8px, 2.8vw, 12px);
+  }
+
+  .preview-paper-title span,
+  .preview-paper-title b {
+    font-size: clamp(6.5px, 2vw, 9px);
+  }
+
+  .preview-section-band strong {
+    font-size: clamp(7px, 2vw, 8.5px);
+  }
+
+  .preview-data dt,
+  .preview-data dd {
+    font-size: clamp(6.5px, 1.9vw, 8.5px);
+  }
 }
