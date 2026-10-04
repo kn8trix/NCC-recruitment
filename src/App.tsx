@@ -59,6 +59,24 @@ function isValidStudentId(studentId: string, department: string) {
   return Boolean(expectedPrefix && match?.[1].toUpperCase() === expectedPrefix);
 }
 
+async function loadImageDataUrl(imagePath: string) {
+  const response = await fetch(imagePath);
+  if (!response.ok) {
+    throw new Error(`Could not load PDF image: ${imagePath}`);
+  }
+
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error(`Could not prepare PDF image: ${imagePath}`));
+    };
+    reader.onerror = () => reject(new Error(`Could not read PDF image: ${imagePath}`));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function getErrors(
   fields: Fields,
   photo: File | null,
@@ -498,80 +516,149 @@ function App() {
   async function downloadApplicationPdf(application: ApplicationReceipt) {
     setPdfError("");
     try {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 18;
-    const textWidth = pageWidth - margin * 2 - 34;
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2;
+      const logoDataUrl = await loadImageDataUrl("/images/ncc-logo.png");
+      const selectedSegments = application.segments.map((name) => ({
+        name,
+        segment: segments.find((item) => item.name === name),
+      }));
+      const segmentImages = await Promise.all(
+        selectedSegments.map(async ({ segment }) =>
+          segment ? loadImageDataUrl(segment.image) : Promise.resolve(""),
+        ),
+      );
 
-    doc.setFillColor(36, 29, 35);
-    doc.rect(0, 0, pageWidth, 42, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("NITER COMPUTER CLUB", margin, 18);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(220, 214, 218);
-    doc.text("OFFICIAL RECRUITMENT APPLICATION · SESSION 2026", margin, 26);
-    doc.setTextColor(165, 230, 181);
-    doc.setFont("helvetica", "bold");
-    doc.text(`REF. ${application.id.slice(0, 8).toUpperCase()}`, margin, 34);
-
-    const imageFormat = photoDataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
-    doc.addImage(photoDataUrl, imageFormat, pageWidth - margin - 27, 8, 27, 29);
-    doc.setTextColor(24, 37, 59);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("APPLICANT DETAILS", margin, 56);
-    doc.setDrawColor(127, 200, 143);
-    doc.setLineWidth(0.7);
-    doc.line(margin, 59, pageWidth - margin, 59);
-
-    const rows = [
-      ["Full name", application.fields.fullName],
-      ["Student ID", application.fields.studentId],
-      ["Department", application.fields.department],
-      ["WhatsApp", application.fields.whatsapp],
-      ["Email", application.fields.email],
-      ["Interests", application.segments.join(", ")],
-      ["Application status", "PENDING REVIEW"],
-      ["Recruit XP", `${application.xp} XP`],
-    ];
-    let y = 70;
-    for (const [label, value] of rows) {
+      doc.setFillColor(36, 29, 35);
+      doc.rect(0, 0, pageWidth, 43, "F");
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, 8, 27, 27, 2, 2, "F");
+      doc.addImage(logoDataUrl, "PNG", margin + 2, 10, 23, 23);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("NITER COMPUTER CLUB", margin + 34, 17);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(220, 214, 218);
+      doc.text("OFFICIAL RECRUITMENT APPLICATION · SESSION 2026", margin + 34, 25);
+      doc.setTextColor(165, 230, 181);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.setTextColor(91, 108, 132);
-      doc.text(label.toUpperCase(), margin, y);
+      doc.text(`REF. ${application.id.slice(0, 8).toUpperCase()}`, margin + 34, 33);
+
+      const imageFormat = application.photoUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(application.photoUrl, imageFormat, pageWidth - margin - 25, 8, 25, 27);
+
+      doc.saveGraphicsState();
+      doc.setGState(doc.GState({ opacity: 0.045 }));
+      doc.addImage(logoDataUrl, "PNG", pageWidth / 2 - 37, 104, 74, 74);
+      doc.restoreGraphicsState();
+
+      doc.setTextColor(36, 29, 35);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("APPLICANT INFORMATION", margin, 54);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(24, 37, 59);
-      const wrapped = doc.splitTextToSize(value, textWidth);
-      doc.text(wrapped, margin + 43, y);
-      y += Math.max(9, wrapped.length * 5.2);
-    }
+      doc.setFontSize(9);
+      doc.setTextColor(91, 108, 132);
+      doc.text("STATUS  PENDING REVIEW", pageWidth - margin, 54, { align: "right" });
+      doc.setDrawColor(127, 200, 143);
+      doc.setLineWidth(0.8);
+      doc.line(margin, 57, pageWidth - margin, 57);
 
-    const footerY = Math.max(y + 28, 258);
-    doc.setDrawColor(198, 208, 223);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(margin, footerY, pageWidth - margin, footerY);
-    doc.setLineDashPattern([], 0);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(91, 108, 132);
-    doc.text(
-      "Submitted through the official NITER Computer Club recruitment portal.",
-      pageWidth / 2,
-      footerY + 8,
-      { align: "center" },
-    );
-    doc.text("Keep this page for your records.", pageWidth / 2, footerY + 13, {
-      align: "center",
-    });
+      const gap = 5;
+      const halfWidth = (contentWidth - gap) / 2;
+      const fields = [
+        { label: "FULL NAME", value: application.fields.fullName, x: margin, y: 62, width: halfWidth },
+        { label: "STUDENT ID", value: application.fields.studentId, x: margin + halfWidth + gap, y: 62, width: halfWidth },
+        { label: "DEPARTMENT", value: application.fields.department, x: margin, y: 87, width: halfWidth },
+        { label: "WHATSAPP", value: application.fields.whatsapp, x: margin + halfWidth + gap, y: 87, width: halfWidth },
+        { label: "EMAIL ADDRESS", value: application.fields.email, x: margin, y: 112, width: contentWidth },
+      ];
 
-    const fileSafeId = application.fields.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
-    doc.save(`NCC_Recruitment_${fileSafeId}.pdf`);
+      for (const field of fields) {
+        doc.setDrawColor(190, 198, 207);
+        doc.setLineWidth(0.35);
+        doc.roundedRect(field.x, field.y, field.width, 20, 1.5, 1.5, "S");
+        doc.setTextColor(91, 108, 132);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text(field.label, field.x + 3, field.y + 6);
+        doc.setTextColor(36, 29, 35);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const valueLines = doc.splitTextToSize(field.value, field.width - 6);
+        doc.text(valueLines.slice(0, 1), field.x + 3, field.y + 15);
+      }
+
+      doc.setTextColor(36, 29, 35);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("SELECTED SEGMENTS", margin, 145);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(91, 108, 132);
+      doc.text(`${selectedSegments.length} selected  ·  ${application.xp} XP`, pageWidth - margin, 145, {
+        align: "right",
+      });
+      doc.setDrawColor(127, 200, 143);
+      doc.setLineWidth(0.8);
+      doc.line(margin, 148, pageWidth - margin, 148);
+
+      const columns = 2;
+      const cardGap = 4;
+      const cardWidth = (contentWidth - cardGap) / columns;
+      const cardHeight = 28;
+      const cardTop = 153;
+      const imageSize = 21;
+
+      selectedSegments.forEach(({ name, segment }, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        const x = margin + column * (cardWidth + cardGap);
+        const y = cardTop + row * (cardHeight + cardGap);
+        const imagePath = segmentImages[index];
+
+        doc.setFillColor(250, 249, 248);
+        doc.setDrawColor(216, 220, 224);
+        doc.setLineWidth(0.35);
+        doc.roundedRect(x, y, cardWidth, cardHeight, 1.5, 1.5, "FD");
+        if (imagePath) {
+          doc.addImage(imagePath, "JPEG", x + 3, y + 3.5, imageSize, imageSize);
+        } else {
+          doc.setFillColor(165, 230, 181);
+          doc.roundedRect(x + 3, y + 3.5, imageSize, imageSize, 1, 1, "F");
+          doc.setTextColor(36, 29, 35);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(7);
+          doc.text("OTHER", x + 3 + imageSize / 2, y + 15, { align: "center" });
+        }
+
+        const displayName = segment ? name : name.replace(/^Other:\s*/, "Other: ");
+        const titleLines = doc.splitTextToSize(displayName, cardWidth - imageSize - 10).slice(0, 2);
+        doc.setTextColor(36, 29, 35);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        const textY = titleLines.length === 1 ? y + 16 : y + 12;
+        doc.text(titleLines, x + imageSize + 6, textY);
+      });
+
+      doc.setDrawColor(198, 208, 223);
+      doc.setLineWidth(0.4);
+      doc.line(margin, 286, pageWidth - margin, 286);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(91, 108, 132);
+      doc.text("Submitted through the official NITER Computer Club recruitment portal.", pageWidth / 2, 292, {
+        align: "center",
+      });
+
+      const fileSafeId = application.fields.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
+      doc.save(`NCC_Recruitment_${fileSafeId}.pdf`);
     } catch (error) {
       const detail = error instanceof Error ? error.message : "An unexpected error occurred.";
       setPdfError(`PDF download failed: ${detail}`);
