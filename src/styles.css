@@ -4040,17 +4040,19 @@ input {
 .scroll-monkey-track {
   position: fixed;
   z-index: 7;
-  top: 8vh;
-  right: 106px;
-  bottom: 8vh;
-  width: 42px;
+  top: 12px;
+  right: 12px;
+  bottom: 150px;
+  width: 48px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease;
+  visibility: hidden;
+  transition: opacity 140ms ease, visibility 140ms ease;
 }
 
-.scroll-monkey-track.is-visible {
+.scroll-monkey-track.is-scrolling {
   opacity: 1;
+  visibility: visible;
 }
 
 .scroll-monkey-rope {
@@ -4058,7 +4060,7 @@ input {
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 4px;
+  width: 3px;
   border: 1px solid rgba(102, 73, 57, 0.36);
   border-radius: 999px;
   background: repeating-linear-gradient(
@@ -4081,8 +4083,24 @@ input {
   transform: translate(-50%, -50%);
 }
 
-.scroll-monkey-track.is-visible .scroll-monkey {
-  animation: robot-monkey-climb 300ms ease-in-out infinite alternate;
+.scroll-monkey-arm,
+.scroll-monkey-leg {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+.scroll-monkey-track.is-scrolling .scroll-monkey {
+  animation: robot-monkey-body-climb 220ms ease-in-out infinite alternate;
+}
+
+.scroll-monkey-track.is-scrolling .scroll-monkey-arm-left,
+.scroll-monkey-track.is-scrolling .scroll-monkey-leg-right {
+  animation: robot-monkey-reach 220ms ease-in-out infinite alternate;
+}
+
+.scroll-monkey-track.is-scrolling .scroll-monkey-arm-right,
+.scroll-monkey-track.is-scrolling .scroll-monkey-leg-left {
+  animation: robot-monkey-reach 220ms ease-in-out infinite alternate-reverse;
 }
 
 .mascot-chat {
@@ -4145,9 +4163,14 @@ input {
   96% { transform: translateY(0) rotate(5deg); }
 }
 
-@keyframes robot-monkey-climb {
-  from { transform: translate(-50%, -50%) rotate(-4deg); }
-  to { transform: translate(-50%, -50%) rotate(4deg); }
+@keyframes robot-monkey-body-climb {
+  from { transform: translate(-50%, -50%) rotate(-2deg); }
+  to { transform: translate(-50%, -50%) rotate(2deg); }
+}
+
+@keyframes robot-monkey-reach {
+  from { rotate: -17deg; }
+  to { rotate: 17deg; }
 }
 
 @keyframes mascot-chat-pop {
@@ -4184,8 +4207,9 @@ input {
   }
 
   .scroll-monkey-track {
-    right: 68px;
-    width: 34px;
+    right: 4px;
+    bottom: 132px;
+    width: 40px;
   }
 
   .scroll-monkey {

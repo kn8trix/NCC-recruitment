@@ -230,11 +230,15 @@ function MascotGuide({
 
 function ScrollMonkey() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [hasScrolled, setHasScrolled] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   useEffect(() => {
     let frameId = 0;
+    let stopTimeout = 0;
     const updateProgress = () => {
+      setIsScrolling(true);
+      window.clearTimeout(stopTimeout);
+      stopTimeout = window.setTimeout(() => setIsScrolling(false), 450);
       if (frameId) return;
       frameId = window.requestAnimationFrame(() => {
         frameId = 0;
@@ -242,15 +246,14 @@ function ScrollMonkey() {
         setScrollProgress(
           maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0,
         );
-        setHasScrolled(window.scrollY > 24);
       });
     };
 
-    updateProgress();
     window.addEventListener("scroll", updateProgress, { passive: true });
     window.addEventListener("resize", updateProgress);
     return () => {
       window.cancelAnimationFrame(frameId);
+      window.clearTimeout(stopTimeout);
       window.removeEventListener("scroll", updateProgress);
       window.removeEventListener("resize", updateProgress);
     };
@@ -258,7 +261,7 @@ function ScrollMonkey() {
 
   return (
     <div
-      className={`scroll-monkey-track${hasScrolled ? " is-visible" : ""}`}
+      className={`scroll-monkey-track${isScrolling ? " is-scrolling" : ""}`}
       aria-hidden="true"
     >
       <span className="scroll-monkey-rope" />
@@ -268,7 +271,22 @@ function ScrollMonkey() {
         style={{ top: `${scrollProgress * 100}%` }}
       >
         <path d="M17 38C4 38 5 57 16 58c7 1 9-7 4-10" fill="none" stroke="#8d5c42" strokeWidth="4" strokeLinecap="round" />
-        <path d="M21 41Q27 34 34 39M51 41Q45 34 38 39M24 58 15 70m33-12 9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+        <g className="scroll-monkey-arm scroll-monkey-arm-left">
+          <path d="M24 43 12 31" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+          <path d="m12 31 5-3" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="12" cy="31" r="3" fill="#e7a7bc" />
+        </g>
+        <g className="scroll-monkey-arm scroll-monkey-arm-right">
+          <path d="m48 43 12-12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+          <path d="m60 31-5-3" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="60" cy="31" r="3" fill="#e7a7bc" />
+        </g>
+        <g className="scroll-monkey-leg scroll-monkey-leg-left">
+          <path d="m27 59-9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+        </g>
+        <g className="scroll-monkey-leg scroll-monkey-leg-right">
+          <path d="m45 59 9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
+        </g>
         <path d="M34 39q2-4 4 0" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
         <circle cx="35" cy="39" r="3" fill="#e7a7bc" />
         <rect x="22" y="37" width="28" height="27" rx="10" fill="#a5e6b5" stroke="#424046" strokeWidth="3" />
