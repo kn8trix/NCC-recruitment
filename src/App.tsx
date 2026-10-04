@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { departments, segments, type Segment } from "./data/segments";
+import { createApplicationPdf } from "./lib/applicationPdf";
 import { getSupabaseClient } from "./lib/supabase";
 
 type Fields = {
@@ -238,12 +239,21 @@ function LiveApplicationPreview({
     return () => media.removeEventListener("change", update);
   }, []);
 
-  const previewRows = [
-    ["Full name", fields.fullName],
-    ["Student ID", fields.studentId],
-    ["Department", fields.department],
-    ["WhatsApp", fields.whatsapp],
-    ["Email", fields.email],
+  const previewRows: [string, string, boolean][] = [
+    ["Application Number", "Added on submission", true],
+    ["Full Name", fields.fullName, !fields.fullName],
+    ["Student ID", fields.studentId, !fields.studentId],
+    ["Department", fields.department, !fields.department],
+    ["WhatsApp Number", fields.whatsapp, !fields.whatsapp],
+    ["Email Address", fields.email, !fields.email],
+    ["Application Date", "Added on submission", true],
+    ["Submitted On", "Added on submission", true],
+  ];
+  const previewInterests = [
+    ...selectedSegments,
+    ...(includesOtherInterest && otherInterest.trim()
+      ? [`Other: ${otherInterest.trim()}`]
+      : []),
   ];
 
   return (
@@ -264,47 +274,59 @@ function LiveApplicationPreview({
           </div>
           <div className="preview-paper-title">
             <strong>NITER COMPUTER CLUB</strong>
-            <span>RECRUITMENT APPLICATION · 2026</span>
+            <span>OFFICIAL RECRUITMENT APPLICATION · SESSION 2026</span>
+            <b>APPLICATION · GENERATED ON SUBMISSION</b>
           </div>
         </header>
-        <div className="preview-paper-rule" />
-        <div className="preview-paper-intro">
-          <div>
-            <span className="preview-label">APPLICATION FORM</span>
-            <strong>Candidate details</strong>
+        <section className="preview-applicant-section" aria-label="Applicant information">
+          <div className="preview-section-band">
+            <strong>APPLICANT INFORMATION</strong>
+            <span>APPLICATION DETAILS</span>
           </div>
-        </div>
-        <div className="preview-photo-frame">
-          {photoUrl ? (
-            <img src={photoUrl} alt="Live preview of applicant photo" />
-          ) : (
-            <span>PHOTO</span>
-          )}
-        </div>
-        <dl className="preview-data">
-          {previewRows.map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd className={value ? "" : "preview-empty"}>{value || "To be completed"}</dd>
+          <div className="preview-applicant-content">
+            <dl className="preview-data">
+              {previewRows.map(([label, value, isPlaceholder]) => (
+                <div key={label}>
+                  <dt>{label}:</dt>
+                  <dd className={isPlaceholder ? "preview-empty" : ""}>{value || "To be completed"}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="preview-photo-frame">
+              {photoUrl ? (
+                <img src={photoUrl} alt="Live preview of applicant photo" />
+              ) : (
+                <span>PHOTO</span>
+              )}
             </div>
-          ))}
-        </dl>
-        <div className="preview-selected">
-          <span className="preview-label">YOUR INTERESTS</span>
-          {selectedSegments.length || (includesOtherInterest && otherInterest.trim()) ? (
-            <ul>
-              {selectedSegments.map((segment) => <li key={segment}>{segment}</li>)}
-              {includesOtherInterest && otherInterest.trim() && <li>Other: {otherInterest.trim()}</li>}
-            </ul>
-          ) : includesOtherInterest ? (
-            <p className="preview-empty">Add your other interest below</p>
+          </div>
+        </section>
+        <section className="preview-selected" aria-label="Selected segments">
+          <div className="preview-section-band preview-segment-band">
+            <strong>SELECTED SEGMENTS</strong>
+            <span>{previewInterests.length} selected</span>
+          </div>
+          {previewInterests.length ? (
+            <ol>
+              {previewInterests.map((interest, index) => {
+                const segment = segments.find((item) => item.name === interest);
+                return (
+                  <li key={`${interest}-${index}`}>
+                    <span className="preview-interest-number">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="preview-interest-copy">
+                      <strong>{interest}</strong>
+                      {segment && <small>{segment.short}</small>}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
           ) : (
-            <p className="preview-empty">Choose a segment or add another interest</p>
+            <p className="preview-empty">Choose segments or add another interest</p>
           )}
-        </div>
+        </section>
         <footer className="preview-paper-footer">
-          <span>OFFICIAL NCC RECRUITMENT</span>
-          <span>SESSION 2026</span>
+          <span>NITER Computer Club · Member Recruitment 2026</span>
         </footer>
       </div>
       <p className="preview-hint">Updates as you complete your application.</p>
@@ -516,147 +538,7 @@ function App() {
   async function downloadApplicationPdf(application: ApplicationReceipt) {
     setPdfError("");
     try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 14;
-      const contentWidth = pageWidth - margin * 2;
-      const logoDataUrl = await loadImageDataUrl("/images/ncc-logo.png");
-      const selectedSegments = application.segments.map((name) => ({
-        name,
-        segment: segments.find((item) => item.name === name),
-      }));
-      const segmentImages = await Promise.all(
-        selectedSegments.map(async ({ segment }) =>
-          segment ? loadImageDataUrl(segment.image) : Promise.resolve(""),
-        ),
-      );
-
-      doc.setFillColor(36, 29, 35);
-      doc.rect(0, 0, pageWidth, 43, "F");
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(margin, 8, 27, 27, 2, 2, "F");
-      doc.addImage(logoDataUrl, "PNG", margin + 2, 10, 23, 23);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("NITER COMPUTER CLUB", margin + 34, 17);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(220, 214, 218);
-      doc.text("OFFICIAL RECRUITMENT APPLICATION · SESSION 2026", margin + 34, 25);
-      doc.setTextColor(165, 230, 181);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.text(`REF. ${application.id.slice(0, 8).toUpperCase()}`, margin + 34, 33);
-
-      const imageFormat = application.photoUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
-      doc.addImage(application.photoUrl, imageFormat, pageWidth - margin - 25, 8, 25, 27);
-
-      doc.saveGraphicsState();
-      doc.setGState(doc.GState({ opacity: 0.045 }));
-      doc.addImage(logoDataUrl, "PNG", pageWidth / 2 - 37, 104, 74, 74);
-      doc.restoreGraphicsState();
-
-      doc.setTextColor(36, 29, 35);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("APPLICANT INFORMATION", margin, 54);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(91, 108, 132);
-      doc.text("STATUS  PENDING REVIEW", pageWidth - margin, 54, { align: "right" });
-      doc.setDrawColor(127, 200, 143);
-      doc.setLineWidth(0.8);
-      doc.line(margin, 57, pageWidth - margin, 57);
-
-      const gap = 5;
-      const halfWidth = (contentWidth - gap) / 2;
-      const fields = [
-        { label: "FULL NAME", value: application.fields.fullName, x: margin, y: 62, width: halfWidth },
-        { label: "STUDENT ID", value: application.fields.studentId, x: margin + halfWidth + gap, y: 62, width: halfWidth },
-        { label: "DEPARTMENT", value: application.fields.department, x: margin, y: 87, width: halfWidth },
-        { label: "WHATSAPP", value: application.fields.whatsapp, x: margin + halfWidth + gap, y: 87, width: halfWidth },
-        { label: "EMAIL ADDRESS", value: application.fields.email, x: margin, y: 112, width: contentWidth },
-      ];
-
-      for (const field of fields) {
-        doc.setDrawColor(190, 198, 207);
-        doc.setLineWidth(0.35);
-        doc.roundedRect(field.x, field.y, field.width, 20, 1.5, 1.5, "S");
-        doc.setTextColor(91, 108, 132);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.text(field.label, field.x + 3, field.y + 6);
-        doc.setTextColor(36, 29, 35);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
-        const valueLines = doc.splitTextToSize(field.value, field.width - 6);
-        doc.text(valueLines.slice(0, 1), field.x + 3, field.y + 15);
-      }
-
-      doc.setTextColor(36, 29, 35);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("SELECTED SEGMENTS", margin, 145);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(91, 108, 132);
-      doc.text(`${selectedSegments.length} selected  ·  ${application.xp} XP`, pageWidth - margin, 145, {
-        align: "right",
-      });
-      doc.setDrawColor(127, 200, 143);
-      doc.setLineWidth(0.8);
-      doc.line(margin, 148, pageWidth - margin, 148);
-
-      const columns = 2;
-      const cardGap = 4;
-      const cardWidth = (contentWidth - cardGap) / columns;
-      const cardHeight = 28;
-      const cardTop = 153;
-      const imageSize = 21;
-
-      selectedSegments.forEach(({ name, segment }, index) => {
-        const column = index % columns;
-        const row = Math.floor(index / columns);
-        const x = margin + column * (cardWidth + cardGap);
-        const y = cardTop + row * (cardHeight + cardGap);
-        const imagePath = segmentImages[index];
-
-        doc.setFillColor(250, 249, 248);
-        doc.setDrawColor(216, 220, 224);
-        doc.setLineWidth(0.35);
-        doc.roundedRect(x, y, cardWidth, cardHeight, 1.5, 1.5, "FD");
-        if (imagePath) {
-          doc.addImage(imagePath, "JPEG", x + 3, y + 3.5, imageSize, imageSize);
-        } else {
-          doc.setFillColor(165, 230, 181);
-          doc.roundedRect(x + 3, y + 3.5, imageSize, imageSize, 1, 1, "F");
-          doc.setTextColor(36, 29, 35);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(7);
-          doc.text("OTHER", x + 3 + imageSize / 2, y + 15, { align: "center" });
-        }
-
-        const displayName = segment ? name : name.replace(/^Other:\s*/, "Other: ");
-        const titleLines = doc.splitTextToSize(displayName, cardWidth - imageSize - 10).slice(0, 2);
-        doc.setTextColor(36, 29, 35);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        const textY = titleLines.length === 1 ? y + 16 : y + 12;
-        doc.text(titleLines, x + imageSize + 6, textY);
-      });
-
-      doc.setDrawColor(198, 208, 223);
-      doc.setLineWidth(0.4);
-      doc.line(margin, 286, pageWidth - margin, 286);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(91, 108, 132);
-      doc.text("Submitted through the official NITER Computer Club recruitment portal.", pageWidth / 2, 292, {
-        align: "center",
-      });
-
+      const doc = await createApplicationPdf(application, loadImageDataUrl);
       const fileSafeId = application.fields.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
       doc.save(`NCC_Recruitment_${fileSafeId}.pdf`);
     } catch (error) {

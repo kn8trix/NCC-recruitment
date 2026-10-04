@@ -4031,3 +4031,264 @@ input {
     animation: none;
   }
 }
+
+.preview-paper {
+  min-height: 0;
+  padding: 0 0 12px;
+  color: #28232a;
+  background: #fff;
+}
+
+.preview-paper::before {
+  position: absolute;
+  z-index: 0;
+  top: 48%;
+  left: 50%;
+  width: 47%;
+  aspect-ratio: 1;
+  background: url("/images/ncc-logo.png") center / contain no-repeat;
+  content: "";
+  opacity: 0.07;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.preview-paper > * {
+  position: relative;
+  z-index: 1;
+}
+
+.preview-paper-header {
+  min-height: 67px;
+  gap: 11px;
+  padding: 10px 12px;
+  color: #fff;
+  background: #241d23;
+}
+
+.preview-logo-frame {
+  width: 43px;
+  height: 43px;
+  flex-basis: 43px;
+  border: 0;
+  border-radius: 2px;
+}
+
+.preview-paper-title {
+  gap: 3px;
+}
+
+.preview-paper-title strong {
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+
+.preview-paper-title span,
+.preview-paper-title b {
+  overflow-wrap: anywhere;
+  color: #ded7dc;
+  font-size: 6px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.preview-paper-title b {
+  color: #a5e6b5;
+  font-size: 6.5px;
+  font-weight: 700;
+}
+
+.preview-applicant-section {
+  margin: 10px 12px 0;
+}
+
+.preview-section-band {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 2px;
+  color: #372b35;
+  background: #efe9ed;
+}
+
+.preview-section-band strong {
+  font-size: 7.5px;
+  letter-spacing: 0.035em;
+}
+
+.preview-section-band span {
+  color: #5a4c57;
+  font-size: 6px;
+  letter-spacing: 0.035em;
+  text-align: right;
+}
+
+.preview-applicant-content {
+  display: flex;
+  min-height: 128px;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.preview-data {
+  min-width: 0;
+  flex: 1;
+  margin: 5px 0 0;
+}
+
+.preview-data > div {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 4px;
+  min-height: 14px;
+  padding: 3px 0;
+  border-bottom-color: #e0dcde;
+}
+
+.preview-data dt,
+.preview-data dd {
+  font-size: 6.5px;
+  line-height: 1.25;
+}
+
+.preview-data dt {
+  color: #4d464c;
+  font-weight: 700;
+}
+
+.preview-data dd {
+  color: #302e30;
+  font-weight: 400;
+}
+
+.preview-empty {
+  color: #716a71 !important;
+}
+
+.preview-photo-frame {
+  width: 67px;
+  height: 89px;
+  flex: 0 0 67px;
+  float: none;
+  margin: 15px 0 0;
+  border: 1px solid #d5cdd2;
+  border-radius: 2px;
+  color: #716a71;
+  background: #fbfafb;
+  font-size: 6px;
+}
+
+.preview-selected {
+  margin: 0 12px;
+}
+
+.preview-segment-band {
+  color: #2d5e3b;
+  background: #e7f2ea;
+}
+
+.preview-segment-band span {
+  color: #4b6551;
+}
+
+.preview-selected ol {
+  display: grid;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preview-selected li {
+  display: flex;
+  min-height: 23px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid #dedadd;
+}
+
+.preview-interest-number {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  place-items: center;
+  border-radius: 50%;
+  color: #2d5e3b;
+  background: #e7f2ea;
+  font-size: 6px;
+  font-weight: 700;
+}
+
+.preview-interest-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.preview-interest-copy strong {
+  overflow-wrap: anywhere;
+  color: #241d23;
+  font-size: 7px;
+}
+
+.preview-interest-copy small {
+  overflow-wrap: anywhere;
+  color: #5b5259;
+  font-size: 6px;
+}
+
+.preview-selected p {
+  margin: 7px 0 0;
+  font-size: 7px;
+}
+
+.preview-paper-footer {
+  margin: auto 12px 0;
+  padding-top: 7px;
+  border-top-color: #cdcdcd;
+  color: #878787;
+  font-size: 6px;
+  letter-spacing: 0;
+}
+
+@media (max-width: 360px) {
+  .preview-paper-header {
+    min-height: 61px;
+    padding: 8px 10px;
+  }
+
+  .preview-logo-frame {
+    width: 39px;
+    height: 39px;
+    flex-basis: 39px;
+  }
+
+  .preview-applicant-section {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+
+  .preview-applicant-content {
+    min-height: 118px;
+    gap: 5px;
+  }
+
+  .preview-photo-frame {
+    width: 58px;
+    height: 78px;
+    flex-basis: 58px;
+  }
+
+  .preview-selected {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+
+  .preview-interest-copy strong {
+    font-size: 6.5px;
+  }
+}
