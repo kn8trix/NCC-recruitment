@@ -36,6 +36,7 @@ type ApplicationReceipt = {
 };
 
 const officialSite = "https://www.nitercomputerclub.tech/";
+const maxPhotoSizeBytes = 2 * 1024 * 1024;
 const initialFields: Fields = {
   fullName: "",
   studentId: "",
@@ -365,13 +366,13 @@ function App() {
       }));
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > maxPhotoSizeBytes) {
       setPhoto(null);
       setPhotoPreview("");
       setPhotoDataUrl("");
       setErrors((current) => ({
         ...current,
-        photo: "Your photo must be 5 MB or smaller.",
+        photo: "Your photo must be 2 MB or smaller.",
       }));
       return;
     }
@@ -813,7 +814,7 @@ function App() {
                   department: "Choose the department listed in your NITER records.",
                   email: "Use an email address you check regularly.",
                   whatsapp: "Include your country code if needed.",
-                  photo: "Add a clear JPEG or PNG photo, up to 5 MB.",
+                  photo: "Add a clear JPEG or PNG photo, up to 2 MB.",
                   other_interest: "A short description is perfect—up to 120 characters.",
                   other_interest_option: "You can select other interests and describe them in your own words.",
                 };
@@ -998,13 +999,13 @@ function App() {
                       <span className="upload-icon"><Upload size={19} aria-hidden="true" /></span>
                       <span className="upload-copy">
                         <strong>Drop your photo here, or <u>browse</u></strong>
-                        <small>JPEG or PNG · Maximum file size 5 MB</small>
+                        <small>JPEG or PNG · Maximum file size 2 MB</small>
                       </span>
                     </>
                   )}
                 </label>
                 <small id="photo-help" className="field-help">
-                  JPEG or PNG · Maximum 5 MB · Only the recruitment team can access your photo.
+                  JPEG or PNG · Maximum 2 MB · Only the recruitment team can access your photo.
                 </small>
                 {errors.photo && <small id="photo-error" className="field-error">{errors.photo}</small>}
               </div>

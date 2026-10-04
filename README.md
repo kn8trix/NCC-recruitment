@@ -11,11 +11,12 @@ A NITER Computer Club recruitment application built with React, Vite, TypeScript
    - [`supabase/migrations/20261004001200_add_other_interest_and_student_id_format.sql`](./supabase/migrations/20261004001200_add_other_interest_and_student_id_format.sql)
    - [`supabase/migrations/20261004004000_private_photos_admin_csv.sql`](./supabase/migrations/20261004004000_private_photos_admin_csv.sql)
    - [`supabase/migrations/20261004130000_align_photo_bucket_and_student_ids.sql`](./supabase/migrations/20261004130000_align_photo_bucket_and_student_ids.sql)
+   - [`supabase/migrations/20261004132000_limit_photo_uploads_to_2mb.sql`](./supabase/migrations/20261004132000_limit_photo_uploads_to_2mb.sql)
 4. Run `npm run dev` and open the local URL printed by Vite. Vite's development server does not run the Vercel `/api/admin/export` function, so admin CSV export is available on the deployed Vercel site.
 
-The migrations create the `recruitment_submissions` table with anonymous insert-only access and a private `recruitment-photos` bucket (JPEG/PNG, maximum 5 MB). Student IDs use the matching department prefix—CSE `CS`, EEE `EE`, Textile `TE`, IPE `IP`, or FDAE `FD`—followed by `-26` and five more digits (for example, `TE-2607001`). Applicants may choose listed segments or enter a custom interest. Student details have no public read policy; photos are stored as private object paths, not public URLs. Anonymous submissions still need appropriate Supabase rate limits, monitoring, a retention policy, and a privacy notice.
+The migrations create the `recruitment_submissions` table with anonymous insert-only access and a private `recruitment-photos` bucket (JPEG/PNG, maximum 2 MB per photo). Student IDs use the matching department prefix—CSE `CS`, EEE `EE`, Textile `TE`, IPE `IP`, or FDAE `FD`—followed by `-26` and five more digits (for example, `TE-2607001`). Applicants may choose listed segments or enter a custom interest. Student details have no public read policy; photos are stored as private object paths, not public URLs. Anonymous submissions still need appropriate Supabase rate limits, monitoring, a retention policy, and a privacy notice.
 
-If the earlier migrations were already applied to an existing project, apply the latest alignment migration. It ensures the `recruitment-photos` bucket is private and permits anonymous uploads to that bucket, then enforces the department-specific ID formats for new submissions. Existing photo objects in the older `student-photos` bucket are left there and remain private; new uploads use `recruitment-photos`.
+If the earlier migrations were already applied to an existing project, apply the alignment migration, then the latest 2 MB upload-limit migration. The latter sets both the current `recruitment-photos` bucket and any older `student-photos` bucket to a 2 MB per-file limit. This limit applies to each photo; Supabase database and file-storage quotas are separate.
 
 ## Deploy to Vercel
 

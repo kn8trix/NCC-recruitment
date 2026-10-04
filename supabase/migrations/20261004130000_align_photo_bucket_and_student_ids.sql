@@ -3,7 +3,7 @@ values (
   'recruitment-photos',
   'recruitment-photos',
   false,
-  5242880,
+  2097152,
   array['image/jpeg', 'image/png']
 )
 on conflict (id) do update
