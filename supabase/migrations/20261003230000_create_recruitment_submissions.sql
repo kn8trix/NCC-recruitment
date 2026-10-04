@@ -3,11 +3,18 @@ create table if not exists public.recruitment_submissions (
   created_at timestamptz not null default now(),
   full_name varchar(255) not null check (char_length(trim(full_name)) between 2 and 255),
   student_id varchar(50) not null unique,
-  constraint recruitment_submissions_student_id_format check (
-    student_id ~* '^[A-Z]{2}-[0-9]{7}$'
-  ),
   department varchar(40) not null check (
     department in ('CSE', 'EEE', 'Textile Engineering', 'IPE', 'FDAE')
+  ),
+  constraint recruitment_submissions_student_id_format check (
+    student_id ~* '^(CS|EE|TE|IP|FD)-26[0-9]{5}$'
+  ),
+  constraint recruitment_submissions_student_id_department check (
+    (department = 'CSE' and student_id ~* '^CS-')
+    or (department = 'EEE' and student_id ~* '^EE-')
+    or (department = 'Textile Engineering' and student_id ~* '^TE-')
+    or (department = 'IPE' and student_id ~* '^IP-')
+    or (department = 'FDAE' and student_id ~* '^FD-')
   ),
   whatsapp_num varchar(20) not null check (char_length(trim(whatsapp_num)) between 8 and 20),
   email varchar(255) not null check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
@@ -65,8 +72,8 @@ create policy "Public can submit recruitment applications"
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
-  'student-photos',
-  'student-photos',
+  'recruitment-photos',
+  'recruitment-photos',
   false,
   5242880,
   array['image/jpeg', 'image/png']
@@ -80,4 +87,4 @@ create policy "Applicants can upload recruitment photos"
   on storage.objects
   for insert
   to anon
-  with check (bucket_id = 'student-photos');
+  with check (bucket_id = 'recruitment-photos');

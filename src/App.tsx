@@ -44,6 +44,20 @@ const initialFields: Fields = {
   email: "",
 };
 
+const departmentIdPrefixes: Record<string, string> = {
+  CSE: "CS",
+  EEE: "EE",
+  "Textile Engineering": "TE",
+  IPE: "IP",
+  FDAE: "FD",
+};
+
+function isValidStudentId(studentId: string, department: string) {
+  const expectedPrefix = departmentIdPrefixes[department];
+  const match = /^([A-Z]{2})-26\d{5}$/i.exec(studentId.trim());
+  return Boolean(expectedPrefix && match?.[1].toUpperCase() === expectedPrefix);
+}
+
 function getErrors(
   fields: Fields,
   photo: File | null,
@@ -56,8 +70,11 @@ function getErrors(
   if (fields.fullName.trim().length < 2) {
     errors.fullName = "Enter your full name (at least 2 characters).";
   }
-  if (!/^[A-Z]{2}-\d{7}$/i.test(fields.studentId.trim())) {
-    errors.studentId = "Enter your ID in this format: CS-2607001.";
+  if (!isValidStudentId(fields.studentId, fields.department)) {
+    const prefix = departmentIdPrefixes[fields.department];
+    errors.studentId = prefix
+      ? `Enter your ${prefix} department ID in this format: ${prefix}-2607001.`
+      : "Choose your department, then enter its matching ID prefix and a number beginning with 26 (for example CS-2607001).";
   }
   if (!fields.department) {
     errors.department = "Choose your department.";
@@ -93,7 +110,7 @@ function calculateXp(
 ) {
   const milestones = [
     fields.fullName.trim().length >= 2,
-    /^[A-Z]{2}-\d{7}$/i.test(fields.studentId.trim()),
+    isValidStudentId(fields.studentId, fields.department),
     Boolean(fields.department),
     /^[+()\d\s-]+$/.test(fields.whatsapp.trim()) &&
       fields.whatsapp.replace(/\D/g, "").length >= 8 &&
@@ -423,7 +440,7 @@ function App() {
       const fileExtension = photo.type === "image/png" ? "png" : "jpg";
       const photoPath = `${safeStudentId}/${submissionId}.${fileExtension}`;
       const upload = await supabase.storage
-        .from("student-photos")
+        .from("recruitment-photos")
         .upload(photoPath, photo, { contentType: photo.type, upsert: false });
 
       if (upload.error) {
@@ -792,7 +809,7 @@ function App() {
                 const target = event.target;
                 const hints: Record<string, string> = {
                   full_name: "Use the name shown on your student record.",
-                  student_id: "Enter two letters, a hyphen, and seven digits—for example CS-2607001.",
+                  student_id: "Use your department prefix, followed by -26 and five more digits. For example CS-2607001.",
                   department: "Choose the department listed in your NITER records.",
                   email: "Use an email address you check regularly.",
                   whatsapp: "Include your country code if needed.",
@@ -839,15 +856,18 @@ function App() {
                       name="student_id"
                       required
                       maxLength={10}
-                      pattern="[A-Za-z]{2}-[0-9]{7}"
+                      pattern="[A-Za-z]{2}-26[0-9]{5}"
                       autoCapitalize="characters"
                       autoComplete="off"
-                      placeholder="CS-2607001"
+                      placeholder={`${departmentIdPrefixes[fields.department] ?? "CS"}-2607001`}
                       value={fields.studentId}
                       onChange={(event) => updateField("studentId", event.target.value)}
                       aria-invalid={Boolean(errors.studentId)}
                       aria-describedby={errors.studentId ? "student-id-error" : undefined}
                     />
+                    <small className="field-help">
+                      Prefix by department: CSE CS · EEE EE · Textile TE · IPE IP · FDAE FD. Follow it with -26 and five digits.
+                    </small>
                     {errors.studentId && <small id="student-id-error" className="field-error">{errors.studentId}</small>}
                   </div>
                   <div className="field-group">
