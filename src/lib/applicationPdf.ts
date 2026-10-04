@@ -8,6 +8,8 @@ export type PdfApplication = {
     department: string;
     whatsapp: string;
     email: string;
+    priorKnowledgeExperience: string;
+    whyJoinNcc: string;
   };
   segments: string[];
   photoUrl: string;
@@ -26,41 +28,59 @@ export async function createApplicationPdf(
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   const logoDataUrl = await loadImageDataUrl("/images/ncc-logo.png");
+  const logoProperties = doc.getImageProperties(logoDataUrl);
+  const logoAspectRatio = logoProperties.height / logoProperties.width;
   const selectedSegments = application.segments.map((name) => ({
     name,
     segment: segments.find((item) => item.name === name),
   }));
 
-  doc.setFillColor(36, 29, 35);
-  doc.rect(0, 0, pageWidth, 43, "F");
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(margin, 8, 27, 27, 2, 2, "F");
-  doc.addImage(logoDataUrl, "PNG", margin + 2, 10, 23, 23);
-  doc.setTextColor(255, 255, 255);
+  doc.setDrawColor(205, 205, 205);
+  doc.roundedRect(margin, 8, 27, 27, 2, 2, "FD");
+  const headerLogoHeight = 22;
+  const headerLogoWidth = headerLogoHeight / logoAspectRatio;
+  doc.addImage(
+    logoDataUrl,
+    "PNG",
+    margin + (27 - headerLogoWidth) / 2,
+    8 + (27 - headerLogoHeight) / 2,
+    headerLogoWidth,
+    headerLogoHeight,
+  );
+  doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("NITER COMPUTER CLUB", margin + 34, 17);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(220, 214, 218);
+  doc.setTextColor(90, 90, 90);
   doc.text("OFFICIAL RECRUITMENT APPLICATION · SESSION 2026", margin + 34, 25);
-  doc.setTextColor(165, 230, 181);
+  doc.setTextColor(55, 55, 55);
   doc.setFont("helvetica", "bold");
   doc.text(`APPLICATION  ${application.id.slice(0, 8).toUpperCase()}`, margin + 34, 33);
   const photoFormat = application.photoUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
 
   doc.saveGraphicsState();
   doc.setGState(doc.GState({ opacity: 0.07 }));
-  doc.addImage(logoDataUrl, "PNG", pageWidth / 2 - 39, 111, 78, 78);
+  const watermarkWidth = 72;
+  const watermarkHeight = watermarkWidth * logoAspectRatio;
+  doc.addImage(
+    logoDataUrl,
+    "PNG",
+    (pageWidth - watermarkWidth) / 2,
+    (297 - watermarkHeight) / 2,
+    watermarkWidth,
+    watermarkHeight,
+  );
   doc.restoreGraphicsState();
 
-  doc.setFillColor(239, 233, 237);
-  doc.roundedRect(margin, 51, contentWidth, 11, 1.5, 1.5, "F");
-  doc.setTextColor(55, 43, 53);
+  doc.setDrawColor(255, 255, 255);
+  doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("APPLICANT INFORMATION", margin + 4, 58.5);
-  doc.setTextColor(90, 76, 87);
+  doc.setTextColor(90, 90, 90);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text("APPLICATION DETAILS", pageWidth - margin - 4, 58.5, { align: "right" });
@@ -70,7 +90,7 @@ export async function createApplicationPdf(
   const photoX = pageWidth - margin - photoWidth;
   const photoY = 79;
   doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(213, 205, 210);
+  doc.setDrawColor(190, 190, 190);
   doc.roundedRect(photoX - 1, photoY - 1, photoWidth + 2, photoHeight + 2, 1.5, 1.5, "FD");
   doc.addImage(application.photoUrl, photoFormat, photoX, photoY, photoWidth, photoHeight);
 
@@ -92,65 +112,40 @@ export async function createApplicationPdf(
 
   detailRows.forEach(([label, value], index) => {
     const y = detailStartY + index * detailRowHeight;
-    doc.setTextColor(45, 43, 45);
+    doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.text(`${label}:`, labelX, y);
-    doc.setTextColor(48, 46, 48);
+    doc.setTextColor(45, 45, 45);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     const valueLines = doc.splitTextToSize(value, detailEndX - valueX);
     doc.text(valueLines.slice(0, 1), valueX, y);
     if (index < detailRows.length - 1) {
-      doc.setDrawColor(224, 220, 222);
+      doc.setDrawColor(195, 195, 195);
       doc.setLineWidth(0.25);
       doc.line(labelX, y + 3, detailEndX, y + 3);
     }
   });
 
-  doc.setFillColor(231, 242, 234);
-  doc.roundedRect(margin, 151, contentWidth, 11, 1.5, 1.5, "F");
-  doc.setTextColor(45, 94, 59);
+  doc.setDrawColor(255, 255, 255);
+  doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.text("SELECTED SEGMENTS", margin + 4, 158.5);
-  doc.setTextColor(75, 101, 81);
+  doc.setTextColor(90, 90, 90);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(7.5);
   doc.text(`${selectedSegments.length} selected`, pageWidth - margin - 4, 158.5, { align: "right" });
 
-  const listTop = 169;
-  const rowHeight = selectedSegments.length > 7 ? 14.5 : 16.5;
-  selectedSegments.forEach(({ name, segment }, index) => {
-    const y = listTop + index * rowHeight;
-    const number = String(index + 1).padStart(2, "0");
-    const title = segment?.name ?? name;
-
-    doc.setFillColor(231, 242, 234);
-    doc.circle(margin + 5, y + 2.5, 3.4, "F");
-    doc.setTextColor(45, 94, 59);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.text(number, margin + 5, y + 3.4, { align: "center" });
-
-    doc.setTextColor(36, 29, 35);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(title, margin + 13, y + 2);
-
-    if (segment) {
-      doc.setTextColor(91, 82, 89);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      doc.text(segment.short, margin + 13, y + 7);
-    }
-
-    if (index < selectedSegments.length - 1) {
-      doc.setDrawColor(222, 218, 221);
-      doc.setLineWidth(0.25);
-      doc.line(margin + 13, y + rowHeight - 1.5, pageWidth - margin, y + rowHeight - 1.5);
-    }
-  });
+  const segmentNames = selectedSegments.map(({ name, segment }) => segment?.name ?? name);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(45, 45, 45);
+  const segmentLines = doc.splitTextToSize(segmentNames.join(" · "), contentWidth);
+  const segmentStartY = 165;
+  const segmentLineHeight = 3.2;
+  doc.text(segmentLines, margin + 4, segmentStartY);
 
   const footerY = 286;
   doc.setDrawColor(205, 205, 205);
@@ -162,6 +157,60 @@ export async function createApplicationPdf(
   doc.text("NITER Computer Club · Member Recruitment 2026", pageWidth / 2, footerY + 5, {
     align: "center",
   });
+
+  const responses: [string, string][] = [
+    ["Prior Knowledge & Experience", application.fields.priorKnowledgeExperience] as [string, string],
+    ["Why Join NITER Computer Club?", application.fields.whyJoinNcc] as [string, string],
+  ].filter(([, value]) => value.trim());
+
+  if (responses.length) {
+    const responseStartY = segmentStartY + segmentLines.length * segmentLineHeight + 5;
+    const responseLimitY = footerY - 7;
+    const responseLayouts = responses.map(([heading, value]) => ({
+      heading,
+      lines: [] as string[],
+      value: value.trim(),
+    }));
+    let responseFontSize = 7;
+
+    for (let fontSize = 7; fontSize >= 3.5; fontSize -= 0.5) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(fontSize);
+      const layouts = responseLayouts.map((response) => ({
+        ...response,
+        lines: doc.splitTextToSize(response.value, contentWidth),
+      }));
+      const lineHeight = fontSize * 0.42;
+      const requiredHeight = layouts.reduce(
+        (height, response) => height + 4.5 + response.lines.length * lineHeight + 3,
+        0,
+      );
+      if (requiredHeight <= responseLimitY - responseStartY) {
+        responseFontSize = fontSize;
+        responseLayouts.splice(0, responseLayouts.length, ...layouts);
+        break;
+      }
+      if (fontSize === 3.5) {
+        throw new Error("The application responses do not fit on a single page.");
+      }
+    }
+
+    let responseY = responseStartY;
+    const responseLineHeight = responseFontSize * 0.42;
+    for (const response of responseLayouts) {
+      doc.setTextColor(20, 20, 20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.text(response.heading, margin + 4, responseY);
+      responseY += 4.5;
+
+      doc.setTextColor(45, 45, 45);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(responseFontSize);
+      doc.text(response.lines, margin + 4, responseY, { lineHeightFactor: 1.05 });
+      responseY += response.lines.length * responseLineHeight + 3;
+    }
+  }
 
   return doc;
 }

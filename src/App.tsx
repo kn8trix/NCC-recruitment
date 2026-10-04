@@ -23,6 +23,8 @@ type Fields = {
   department: string;
   whatsapp: string;
   email: string;
+  priorKnowledgeExperience: string;
+  whyJoinNcc: string;
 };
 
 type FieldName = keyof Fields | "photo" | "segments" | "otherInterest";
@@ -44,6 +46,8 @@ const initialFields: Fields = {
   department: "",
   whatsapp: "",
   email: "",
+  priorKnowledgeExperience: "",
+  whyJoinNcc: "",
 };
 
 const departmentIdPrefixes: Record<string, string> = {
@@ -58,6 +62,11 @@ function isValidStudentId(studentId: string, department: string) {
   const expectedPrefix = departmentIdPrefixes[department];
   const match = /^([A-Z]{2})-26\d+$/i.exec(studentId.trim());
   return Boolean(expectedPrefix && match?.[1].toUpperCase() === expectedPrefix);
+}
+
+function getDepartmentFromStudentId(studentId: string) {
+  const prefix = /^\s*([a-z]{2})(?:-|$)/i.exec(studentId)?.[1].toUpperCase();
+  return Object.entries(departmentIdPrefixes).find(([, idPrefix]) => idPrefix === prefix)?.[0];
 }
 
 async function loadImageDataUrl(imagePath: string) {
@@ -255,6 +264,14 @@ function LiveApplicationPreview({
       ? [`Other: ${otherInterest.trim()}`]
       : []),
   ];
+  const previewResponses: Array<[string, string]> = [
+    ["Prior Knowledge & Experience", fields.priorKnowledgeExperience] as [string, string],
+    ["Why Join NITER Computer Club?", fields.whyJoinNcc] as [string, string],
+  ].filter(([, value]) => value.trim());
+  const previewResponseFontSize = Math.max(
+    4,
+    7 - previewResponses.reduce((total, [, value]) => total + value.length, 0) / 900,
+  );
 
   return (
     <details
@@ -307,24 +324,17 @@ function LiveApplicationPreview({
             <span>{previewInterests.length} selected</span>
           </div>
           {previewInterests.length ? (
-            <ol>
-              {previewInterests.map((interest, index) => {
-                const segment = segments.find((item) => item.name === interest);
-                return (
-                  <li key={`${interest}-${index}`}>
-                    <span className="preview-interest-number">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="preview-interest-copy">
-                      <strong>{interest}</strong>
-                      {segment && <small>{segment.short}</small>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            <p className="preview-segment-list">{previewInterests.join(" · ")}</p>
           ) : (
             <p className="preview-empty">Choose segments or add another interest</p>
           )}
         </section>
+        {previewResponses.map(([heading, value]) => (
+          <section className="preview-response-section" key={heading}>
+            <h3>{heading}</h3>
+            <p style={{ fontSize: `${previewResponseFontSize}px` }}>{value}</p>
+          </section>
+        ))}
         <footer className="preview-paper-footer">
           <span>NITER Computer Club · Member Recruitment 2026</span>
         </footer>
@@ -388,8 +398,35 @@ function App() {
   }, [photoPreview]);
 
   function updateField(field: keyof Fields, value: string) {
-    setFields((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
+    setFields((current) => {
+      if (field === "department") {
+        const idPrefix = departmentIdPrefixes[value];
+        if (!idPrefix) return { ...current, department: value };
+
+        const existingSuffix = /^[a-z]{2}-26(\d*)$/i.exec(current.studentId.trim())?.[1] ?? "";
+        return {
+          ...current,
+          department: value,
+          studentId: `${idPrefix}-26${existingSuffix}`,
+        };
+      }
+
+      if (field === "studentId") {
+        return {
+          ...current,
+          studentId: value,
+          department: getDepartmentFromStudentId(value) ?? current.department,
+        };
+      }
+
+      return { ...current, [field]: value };
+    });
+    setErrors((current) => ({
+      ...current,
+      [field]: undefined,
+      ...(field === "studentId" ? { department: undefined } : {}),
+      ...(field === "department" ? { studentId: undefined } : {}),
+    }));
     setSubmissionError("");
   }
 
@@ -779,15 +816,20 @@ function App() {
                 const target = event.target;
                 const hints: Record<string, string> = {
                   full_name: "Use the name shown on your student record.",
-                  student_id: "Use your department prefix, followed by -26 and the rest of your ID digits. For example CS-2607001.",
+                  student_id: "The department prefix and -26 are filled automatically. Enter the rest of your student ID digits.",
                   department: "Choose the department listed in your NITER records.",
                   email: "Use an email address you check regularly.",
                   whatsapp: "Include your country code if needed.",
                   photo: "Add a clear JPEG or PNG photo, up to 2 MB.",
+                  prior_knowledge_experience: "Share relevant skills, projects, coursework, or experience.",
+                  why_join_ncc: "Tell us what motivates you to join NCC.",
                   other_interest: "A short description is perfect—up to 120 characters.",
                   other_interest_option: "You can select other interests and describe them in your own words.",
                 };
-                const fieldName = target instanceof HTMLInputElement ? target.name : "";
+                const fieldName =
+                  target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+                    ? target.name
+                    : "";
                 setMascotTip(hints[fieldName] ?? "Fill in this detail and I’ll update your preview.");
               }}
               noValidate
@@ -836,7 +878,7 @@ function App() {
                       aria-describedby={errors.studentId ? "student-id-error" : undefined}
                     />
                     <small className="field-help">
-                      Prefix by department: CSE CS · EEE EE · Textile TE · IPE IP · FDAE FD. Follow it with -26 and the remaining ID digits.
+                      Your department prefix and -26 are filled automatically. Enter the remaining ID digits.
                     </small>
                     {errors.studentId && <small id="student-id-error" className="field-error">{errors.studentId}</small>}
                   </div>
@@ -923,6 +965,42 @@ function App() {
                   />
                   <small id="whatsapp-help" className="field-help">Include your country code if you use one.</small>
                   {errors.whatsapp && <small id="whatsapp-error" className="field-error">{errors.whatsapp}</small>}
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="form-section-heading">
+                  <div>
+                    <h4>Tell us a little more</h4>
+                  </div>
+                </div>
+                <div className="written-response-fields">
+                  <div className="field-group">
+                    <label htmlFor="prior-knowledge-experience">Prior Knowledge &amp; Experience</label>
+                    <textarea
+                      id="prior-knowledge-experience"
+                      name="prior_knowledge_experience"
+                      maxLength={200}
+                      rows={4}
+                      placeholder="Share any relevant skills, projects, coursework, or experience."
+                      value={fields.priorKnowledgeExperience}
+                      onChange={(event) => updateField("priorKnowledgeExperience", event.target.value)}
+                    />
+                    <small className="field-help">Optional · Up to 200 characters</small>
+                  </div>
+                  <div className="field-group">
+                    <label htmlFor="why-join-ncc">Why Join NITER Computer Club?</label>
+                    <textarea
+                      id="why-join-ncc"
+                      name="why_join_ncc"
+                      maxLength={200}
+                      rows={4}
+                      placeholder="Tell us what interests you about joining NCC."
+                      value={fields.whyJoinNcc}
+                      onChange={(event) => updateField("whyJoinNcc", event.target.value)}
+                    />
+                    <small className="field-help">Optional · Up to 200 characters</small>
+                  </div>
                 </div>
               </div>
 
