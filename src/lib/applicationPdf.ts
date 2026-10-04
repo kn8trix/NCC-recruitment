@@ -98,7 +98,6 @@ export async function createApplicationPdf(
     ["WhatsApp Number", application.fields.whatsapp],
     ["Email Address", application.fields.email],
     ["Application Date", new Date().toISOString().slice(0, 10)],
-    ["Submitted On", new Date().toLocaleString()],
   ];
   const labelX = margin + 4;
   const valueX = margin + 49;

@@ -256,7 +256,6 @@ function LiveApplicationPreview({
     ["WhatsApp Number", fields.whatsapp, !fields.whatsapp],
     ["Email Address", fields.email, !fields.email],
     ["Application Date", "Added on submission", true],
-    ["Submitted On", "Added on submission", true],
   ];
   const previewInterests = [
     ...selectedSegments,
