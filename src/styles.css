@@ -3157,6 +3157,65 @@ input {
   letter-spacing: -0.03em;
 }
 
+.form-completion {
+  margin: 0 0 3px;
+}
+
+.form-completion-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: #655e64;
+  font-size: 11px;
+}
+
+.form-completion-label strong {
+  color: #347347;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-completion-track {
+  position: relative;
+  height: 6px;
+  margin: 11px 14px 17px;
+  border-radius: 999px;
+  background: #ece9e7;
+}
+
+.form-completion-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a5e6b5;
+  transition: width 350ms ease;
+}
+
+.form-completion-runner {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  transition: left 350ms ease;
+}
+
+.form-completion-runner .bytebot-stage {
+  width: 30px;
+  height: 30px;
+}
+
+.form-completion-runner .bytebot-mascot {
+  animation: mascot-run 250ms ease-in-out infinite alternate;
+  transform-origin: center bottom;
+}
+
+@keyframes mascot-run {
+  from { transform: translateY(1px) rotate(-5deg); }
+  to { transform: translateY(-2px) rotate(5deg); }
+}
+
 .required-note {
   color: #655e64;
   font-family: inherit;
@@ -3969,13 +4028,13 @@ input {
   position: fixed;
   z-index: 8;
   right: 18px;
-  bottom: 16px;
   display: flex;
   max-width: min(365px, calc(100vw - 32px));
   align-items: flex-end;
   justify-content: flex-end;
   gap: 8px;
   pointer-events: none;
+  transition: top 180ms ease-out;
 }
 
 .mascot-chat {
@@ -4023,6 +4082,10 @@ input {
   animation: mascot-float 2.6s ease-in-out infinite;
 }
 
+.mascot-guide.is-climbing .mascot-guide-button .bytebot-mascot {
+  animation: mascot-climb 180ms ease-in-out infinite alternate;
+}
+
 .mascot-guide:not(.is-open) .mascot-guide-button {
   animation: mascot-nudge 4s ease-in-out infinite;
 }
@@ -4036,6 +4099,11 @@ input {
   0%, 88%, 100% { transform: translateY(0) rotate(0); }
   92% { transform: translateY(-4px) rotate(-5deg); }
   96% { transform: translateY(0) rotate(5deg); }
+}
+
+@keyframes mascot-climb {
+  from { transform: translateY(2px) rotate(-4deg); }
+  to { transform: translateY(-3px) rotate(4deg); }
 }
 
 @keyframes mascot-chat-pop {
@@ -4066,7 +4134,6 @@ input {
 
   .mascot-guide {
     right: 9px;
-    bottom: 9px;
     max-width: calc(100vw - 18px);
     gap: 5px;
   }

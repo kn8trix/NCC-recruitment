@@ -74,9 +74,9 @@ export const segments: Segment[] = [
 ];
 
 export const departments = [
-  { code: "CSE", name: "Computer Science and Engineering" },
-  { code: "EEE", name: "Electrical and Electronic Engineering" },
-  { code: "Textile Engineering", name: "Textile Engineering" },
-  { code: "IPE", name: "Industrial and Production Engineering" },
-  { code: "FDAE", name: "Fashion Design and Apparel Engineering" },
+  { code: "CSE", label: "CSE", name: "Computer Science & Engineering" },
+  { code: "EEE", label: "EEE", name: "Electrical & Electronic Engineering" },
+  { code: "Textile Engineering", label: "TE", name: "Textile Engineering" },
+  { code: "IPE", label: "IPE", name: "Industrial & Production Engineering" },
+  { code: "FDAE", label: "FDAE", name: "Fashion Design & Apparel Eng." },
 ];

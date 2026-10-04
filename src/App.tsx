@@ -183,6 +183,8 @@ function MascotGuide({
   setTip: (tip: string) => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [climberTop, setClimberTop] = useState(80);
+  const [isClimbing, setIsClimbing] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -192,7 +194,7 @@ function MascotGuide({
           if (document.querySelector(".application-form :focus")) continue;
           setTip(
             entry.target.id === "segments"
-              ? "Pick a segment that sounds fun. Choose more than one, or write your own."
+              ? "Pick a segment that fits your interests, or add your own."
               : "Your ID should look like CS-2607001. I’ll keep your application preview updated.",
           );
         }
@@ -204,13 +206,47 @@ function MascotGuide({
   }, [setTip]);
 
   useEffect(() => {
+    let frameId = 0;
+    let stillnessTimeout = 0;
+
+    const updateClimber = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollProgress = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+        const minTop = 80;
+        const maxTop = Math.max(minTop, window.innerHeight - (open ? 230 : 100));
+        setClimberTop(minTop + (maxTop - minTop) * scrollProgress);
+        setIsClimbing(true);
+        window.clearTimeout(stillnessTimeout);
+        stillnessTimeout = window.setTimeout(() => setIsClimbing(false), 180);
+      });
+    };
+
+    updateClimber();
+    window.addEventListener("scroll", updateClimber, { passive: true });
+    window.addEventListener("resize", updateClimber);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(stillnessTimeout);
+      window.removeEventListener("scroll", updateClimber);
+      window.removeEventListener("resize", updateClimber);
+    };
+  }, [open]);
+
+  useEffect(() => {
     setOpen(true);
     const timeout = window.setTimeout(() => setOpen(false), 7000);
     return () => window.clearTimeout(timeout);
   }, [tip]);
 
   return (
-    <aside className={`mascot-guide${open ? " is-open" : ""}`} aria-label="Application helper">
+    <aside
+      className={`mascot-guide${open ? " is-open" : ""}${isClimbing ? " is-climbing" : ""}`}
+      aria-label="Application helper"
+      style={{ top: `${climberTop}px` }}
+    >
       {open && <p className="mascot-chat" aria-live="polite">{tip}</p>}
       <button
         className="mascot-guide-button"
@@ -370,6 +406,20 @@ function App() {
     () => calculateXp(fields, photo, chosenSegments, includesOtherInterest ? otherInterest : ""),
     [fields, photo, chosenSegments, includesOtherInterest, otherInterest],
   );
+  const formProgress = useMemo(() => {
+    const completedDetails = [
+      fields.fullName.trim().length >= 2,
+      isValidStudentId(fields.studentId, fields.department),
+      Boolean(fields.department),
+      /^[+()\d\s-]+$/.test(fields.whatsapp.trim()) &&
+        fields.whatsapp.replace(/\D/g, "").length >= 8 &&
+        fields.whatsapp.replace(/\D/g, "").length <= 15,
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.trim()),
+      Boolean(photo),
+    ].filter(Boolean).length;
+
+    return Math.round((completedDetails / 6) * 100);
+  }, [fields, photo]);
   const selectedInterests = useMemo(
     () => [
       ...chosenSegments,
@@ -836,6 +886,29 @@ function App() {
                 <h3>Your details</h3>
                 <span className="required-note"><span>*</span> Required</span>
               </div>
+              <div className="form-completion">
+                <div className="form-completion-label">
+                  <span>Form completion</span>
+                  <strong>{formProgress}%</strong>
+                </div>
+                <div
+                  className="form-completion-track"
+                  role="progressbar"
+                  aria-label="Required form details completed"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={formProgress}
+                >
+                  <span className="form-completion-fill" style={{ width: `${formProgress}%` }} />
+                  <span
+                    className="form-completion-runner"
+                    style={{ left: `${formProgress}%` }}
+                    aria-hidden="true"
+                  >
+                    <ByteBot />
+                  </span>
+                </div>
+              </div>
 
               <div className="form-section">
                 <div className="form-section-heading">
@@ -932,7 +1005,10 @@ function App() {
                         <span className="radio-indicator" aria-hidden="true">
                           {fields.department === department.code && <Check size={11} />}
                         </span>
-                        <span><strong>{department.code}</strong><small>{department.name}</small></span>
+                        <span>
+                          <strong>{department.label}</strong>
+                          <small title={department.name}>{department.name}</small>
+                        </span>
                       </label>
                     ))}
                   </div>
