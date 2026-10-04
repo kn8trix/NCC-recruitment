@@ -80,10 +80,6 @@ export async function createApplicationPdf(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("APPLICANT INFORMATION", margin + 4, 58.5);
-  doc.setTextColor(90, 90, 90);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("APPLICATION DETAILS", pageWidth - margin - 4, 58.5, { align: "right" });
 
   const photoWidth = 43;
   const photoHeight = 57;

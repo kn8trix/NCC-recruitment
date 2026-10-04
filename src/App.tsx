@@ -298,7 +298,6 @@ function LiveApplicationPreview({
         <section className="preview-applicant-section" aria-label="Applicant information">
           <div className="preview-section-band">
             <strong>APPLICANT INFORMATION</strong>
-            <span>APPLICATION DETAILS</span>
           </div>
           <div className="preview-applicant-content">
             <dl className="preview-data">
