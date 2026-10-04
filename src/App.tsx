@@ -12,6 +12,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+
 import type { FormEvent } from "react";
 import { departments, segments, type Segment } from "./data/segments";
 import { createApplicationPdf } from "./lib/applicationPdf";
@@ -175,6 +176,20 @@ function ByteBot() {
   );
 }
 
+function DinoRunner() {
+  return (
+    <div className="dino-runner" role="img" aria-label="Dino running along the form progress bar">
+      <picture>
+        <source
+          media="(prefers-reduced-motion: reduce)"
+          srcSet="/images/dino-run-pose.png"
+        />
+        <img src="/images/dino-run-cycle.gif" alt="" />
+      </picture>
+    </div>
+  );
+}
+
 function MascotGuide({
   tip,
   setTip,
@@ -210,98 +225,18 @@ function MascotGuide({
   }, [tip]);
 
   return (
-    <>
-      <aside className={`mascot-guide${open ? " is-open" : ""}`} aria-label="Application helper">
-        {open && <p className="mascot-chat" aria-live="polite">{tip}</p>}
-        <button
-          className="mascot-guide-button"
-          type="button"
-          aria-label={open ? "Hide application helper message" : "Show application helper message"}
-          aria-expanded={open}
-          onClick={() => setOpen((isOpen) => !isOpen)}
-        >
-          <ByteBot />
-        </button>
-      </aside>
-      <ScrollMonkey />
-    </>
-  );
-}
-
-function ScrollMonkey() {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
-
-  useEffect(() => {
-    let frameId = 0;
-    let stopTimeout = 0;
-    const updateProgress = () => {
-      setIsScrolling(true);
-      window.clearTimeout(stopTimeout);
-      stopTimeout = window.setTimeout(() => setIsScrolling(false), 450);
-      if (frameId) return;
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-        setScrollProgress(
-          maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0,
-        );
-      });
-    };
-
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress);
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(stopTimeout);
-      window.removeEventListener("scroll", updateProgress);
-      window.removeEventListener("resize", updateProgress);
-    };
-  }, []);
-
-  return (
-    <div
-      className={`scroll-monkey-track${isScrolling ? " is-scrolling" : ""}`}
-      aria-hidden="true"
-    >
-      <span className="scroll-monkey-rope" />
-      <svg
-        className="scroll-monkey"
-        viewBox="0 0 72 80"
-        style={{ top: `${scrollProgress * 100}%` }}
+    <aside className={`mascot-guide${open ? " is-open" : ""}`} aria-label="Application helper">
+      {open && <p className="mascot-chat" aria-live="polite">{tip}</p>}
+      <button
+        className="mascot-guide-button"
+        type="button"
+        aria-label={open ? "Hide application helper message" : "Show application helper message"}
+        aria-expanded={open}
+        onClick={() => setOpen((isOpen) => !isOpen)}
       >
-        <path d="M17 38C4 38 5 57 16 58c7 1 9-7 4-10" fill="none" stroke="#8d5c42" strokeWidth="4" strokeLinecap="round" />
-        <g className="scroll-monkey-arm scroll-monkey-arm-left">
-          <path d="M24 43 12 31" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
-          <path d="m12 31 5-3" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="12" cy="31" r="3" fill="#e7a7bc" />
-        </g>
-        <g className="scroll-monkey-arm scroll-monkey-arm-right">
-          <path d="m48 43 12-12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
-          <path d="m60 31-5-3" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="60" cy="31" r="3" fill="#e7a7bc" />
-        </g>
-        <g className="scroll-monkey-leg scroll-monkey-leg-left">
-          <path d="m27 59-9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
-        </g>
-        <g className="scroll-monkey-leg scroll-monkey-leg-right">
-          <path d="m45 59 9 12" fill="none" stroke="#424046" strokeWidth="7" strokeLinecap="round" />
-        </g>
-        <path d="M34 39q2-4 4 0" fill="none" stroke="#a5e6b5" strokeWidth="4" strokeLinecap="round" />
-        <circle cx="35" cy="39" r="3" fill="#e7a7bc" />
-        <rect x="22" y="37" width="28" height="27" rx="10" fill="#a5e6b5" stroke="#424046" strokeWidth="3" />
-        <circle cx="36" cy="21" r="17" fill="#8d5c42" stroke="#424046" strokeWidth="3" />
-        <circle cx="20" cy="20" r="6" fill="#c88c68" stroke="#424046" strokeWidth="2" />
-        <circle cx="52" cy="20" r="6" fill="#c88c68" stroke="#424046" strokeWidth="2" />
-        <ellipse cx="36" cy="25" rx="10" ry="7" fill="#f2d7be" />
-        <rect x="25" y="15" width="22" height="11" rx="5" fill="#252329" />
-        <circle cx="31" cy="20" r="2" fill="#a5e6b5" />
-        <circle cx="41" cy="20" r="2" fill="#a5e6b5" />
-        <path d="M32 27q4 3 8 0" fill="none" stroke="#424046" strokeWidth="1.5" strokeLinecap="round" />
-        <rect x="29" y="45" width="14" height="9" rx="3" fill="#424046" />
-        <circle cx="36" cy="49.5" r="2" fill="#e7a7bc" />
-      </svg>
-    </div>
+        <ByteBot />
+      </button>
+    </aside>
   );
 }
 
@@ -363,6 +298,12 @@ function LiveApplicationPreview({
         <span>Live A4 preview</span>
         <span className="preview-live">LIVE</span>
       </summary>
+      <img
+        className="preview-sleeping-cat"
+        src="/images/retro-cat-idle.gif"
+        alt=""
+        aria-hidden="true"
+      />
       <div className="preview-paper">
         <header className="preview-paper-header">
           <div className="preview-logo-frame">
@@ -786,6 +727,7 @@ function App() {
                 Start your application <ArrowRight size={16} aria-hidden="true" />
               </a>
             </div>
+            <img className="hero-lp-gif" src="/images/unique-lp.gif" alt="" aria-hidden="true" />
           </div>
         </section>
 
@@ -796,7 +738,10 @@ function App() {
             </a>
             <div className="segment-section-heading">
               <div>
-                <h2 id="segments-title">Pick a path</h2>
+                <div className="segment-title-row">
+                  <h2 id="segments-title">Pick a path</h2>
+                  <img className="path-penguin" src="/images/path-penguin.gif" alt="" aria-hidden="true" />
+                </div>
                 <p>Choose one or more segments, or add your own interest.</p>
               </div>
               {(chosenSegments.length > 0 || includesOtherInterest) && (
@@ -926,6 +871,12 @@ function App() {
               }}
               noValidate
             >
+              <img
+                className="form-cat-sticker"
+                src="/images/form-cat-sticker.gif"
+                alt=""
+                aria-hidden="true"
+              />
               <div className="form-heading">
                 <h3>Your details</h3>
                 <span className="required-note"><span>*</span> Required</span>
@@ -949,7 +900,7 @@ function App() {
                     style={{ left: `${formProgress}%` }}
                     aria-hidden="true"
                   >
-                    <ByteBot />
+                    <DinoRunner />
                   </span>
                 </div>
               </div>
@@ -1185,6 +1136,7 @@ function App() {
               )}
 
               <button className="primary-button submit-button" type="submit" disabled={isSubmitting}>
+                <img className="submit-cat-sticker" src="/images/submit-cat.gif" alt="" aria-hidden="true" />
                 {isSubmitting ? (
                   <><span className="loading-spinner" aria-hidden="true" /> Sending your application…</>
                 ) : (

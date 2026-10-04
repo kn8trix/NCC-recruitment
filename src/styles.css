@@ -2868,6 +2868,18 @@ input {
   justify-content: flex-start;
 }
 
+.hero-lp-gif {
+  position: absolute;
+  z-index: 2;
+  right: 4%;
+  bottom: -72px;
+  display: block;
+  width: 190px;
+  height: 190px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .hero-copy {
   z-index: 1;
   width: min(620px, 100%);
@@ -2931,6 +2943,7 @@ input {
   width: 100%;
   height: 100%;
   overflow: visible;
+  transform-origin: center bottom;
 }
 
 .section-wrap {
@@ -2957,6 +2970,20 @@ input {
   font-size: 23px;
   font-weight: 700;
   letter-spacing: -0.035em;
+}
+
+.segment-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.path-penguin {
+  display: block;
+  width: 64px;
+  height: 46px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .segment-section-heading p {
@@ -3136,11 +3163,24 @@ input {
 }
 
 .application-form {
+  position: relative;
   padding: 22px 24px;
   border: 1px solid #e1dcda;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 3px 14px rgba(38, 31, 38, 0.045);
+}
+
+.form-cat-sticker {
+  position: absolute;
+  z-index: 2;
+  top: -22px;
+  right: 16px;
+  display: block;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .form-heading {
@@ -3194,26 +3234,33 @@ input {
   position: absolute;
   top: 50%;
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   transform: translate(-50%, -50%);
   transition: left 350ms ease;
 }
 
-.form-completion-runner .bytebot-stage {
-  width: 30px;
-  height: 30px;
+.dino-runner,
+.dino-runner picture,
+.dino-runner img {
+  display: block;
+  width: 32px;
+  height: 32px;
 }
 
-.form-completion-runner .bytebot-mascot {
-  animation: mascot-run 250ms ease-in-out infinite alternate;
-  transform-origin: center bottom;
+.dino-runner img {
+  image-rendering: pixelated;
+  object-fit: contain;
 }
 
-@keyframes mascot-run {
-  from { transform: translateY(1px) rotate(-5deg); }
-  to { transform: translateY(-2px) rotate(5deg); }
+@keyframes mascot-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(1deg);
+  }
 }
 
 .required-note {
@@ -3445,7 +3492,19 @@ input {
 }
 
 .submit-button {
+  position: relative;
   margin-top: 13px;
+}
+
+.submit-cat-sticker {
+  position: absolute;
+  top: -22px;
+  right: 8px;
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .loading-spinner {
@@ -3463,10 +3522,23 @@ input {
   box-shadow: 0 3px 14px rgba(38, 31, 38, 0.045);
 }
 
+.preview-sleeping-cat {
+  position: absolute;
+  z-index: 2;
+  top: -28px;
+  right: 10px;
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .preview-panel-heading {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 10px;
   margin-bottom: 10px;
   color: #302b31;
@@ -3481,6 +3553,8 @@ input {
 }
 
 .preview-live {
+  position: absolute;
+  right: 0;
   color: #347347;
   font-size: 10px;
 }
@@ -3745,6 +3819,13 @@ input {
     text-align: left;
   }
 
+  .hero-lp-gif {
+    right: 1%;
+    bottom: -36px;
+    width: 88px;
+    height: 88px;
+  }
+
   .hero-kicker {
     margin-bottom: 7px;
     font-size: 9px;
@@ -3898,7 +3979,7 @@ input {
   }
 
   .live-preview-panel {
-    position: static;
+    position: relative;
     padding: 12px;
   }
 
@@ -4037,72 +4118,6 @@ input {
   pointer-events: none;
 }
 
-.scroll-monkey-track {
-  position: fixed;
-  z-index: 7;
-  top: 12px;
-  right: 12px;
-  bottom: 150px;
-  width: 48px;
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-  transition: opacity 140ms ease, visibility 140ms ease;
-}
-
-.scroll-monkey-track.is-scrolling {
-  opacity: 1;
-  visibility: visible;
-}
-
-.scroll-monkey-rope {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 3px;
-  border: 1px solid rgba(102, 73, 57, 0.36);
-  border-radius: 999px;
-  background: repeating-linear-gradient(
-    135deg,
-    #b58a68 0 4px,
-    #d4b08b 4px 7px,
-    #a77a5b 7px 9px
-  );
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
-  transform: translateX(-50%);
-}
-
-.scroll-monkey {
-  position: absolute;
-  left: 50%;
-  width: 52px;
-  height: 58px;
-  overflow: visible;
-  filter: drop-shadow(0 2px 2px rgba(36, 29, 35, 0.2));
-  transform: translate(-50%, -50%);
-}
-
-.scroll-monkey-arm,
-.scroll-monkey-leg {
-  transform-box: view-box;
-  transform-origin: 50% 50%;
-}
-
-.scroll-monkey-track.is-scrolling .scroll-monkey {
-  animation: robot-monkey-body-climb 220ms ease-in-out infinite alternate;
-}
-
-.scroll-monkey-track.is-scrolling .scroll-monkey-arm-left,
-.scroll-monkey-track.is-scrolling .scroll-monkey-leg-right {
-  animation: robot-monkey-reach 220ms ease-in-out infinite alternate;
-}
-
-.scroll-monkey-track.is-scrolling .scroll-monkey-arm-right,
-.scroll-monkey-track.is-scrolling .scroll-monkey-leg-left {
-  animation: robot-monkey-reach 220ms ease-in-out infinite alternate-reverse;
-}
-
 .mascot-chat {
   position: relative;
   width: min(255px, calc(100vw - 112px));
@@ -4163,16 +4178,6 @@ input {
   96% { transform: translateY(0) rotate(5deg); }
 }
 
-@keyframes robot-monkey-body-climb {
-  from { transform: translate(-50%, -50%) rotate(-2deg); }
-  to { transform: translate(-50%, -50%) rotate(2deg); }
-}
-
-@keyframes robot-monkey-reach {
-  from { rotate: -17deg; }
-  to { rotate: 17deg; }
-}
-
 @keyframes mascot-chat-pop {
   from { opacity: 0; transform: translateY(5px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -4206,17 +4211,6 @@ input {
     gap: 5px;
   }
 
-  .scroll-monkey-track {
-    right: 4px;
-    bottom: 132px;
-    width: 40px;
-  }
-
-  .scroll-monkey {
-    width: 44px;
-    height: 49px;
-  }
-
   .mascot-chat {
     width: min(220px, calc(100vw - 82px));
     margin-bottom: 8px;
@@ -4241,8 +4235,7 @@ input {
   .mascot-guide-button,
   .mascot-guide-button .bytebot-mascot,
   .mascot-chat,
-  .scroll-monkey-track,
-  .scroll-monkey {
+  .dino-runner {
     animation: none;
     transition: none;
   }
@@ -4280,6 +4273,19 @@ input {
   padding: 10px 12px;
   color: #141414;
   background: #fff;
+}
+
+.preview-sleeping-cat,
+.preview-sleeping-cat img {
+  display: block;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.preview-sleeping-cat img {
+  image-rendering: pixelated;
+  object-fit: contain;
 }
 
 .preview-logo-frame {
